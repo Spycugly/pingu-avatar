@@ -166,13 +166,12 @@ export default function PinguStudio() {
     setTime(total + 0.001);
   };
 
-  const reorder = (from: string, to: string) =>
+  const move = (key: string, index: number) =>
     setClips((list) => {
-      const moving = list.find((c) => c.key === from);
+      const moving = list.find((c) => c.key === key);
       if (!moving) return list;
-      const rest = list.filter((c) => c.key !== from);
-      const at = rest.findIndex((c) => c.key === to);
-      rest.splice(at, 0, moving);
+      const rest = list.filter((c) => c.key !== key);
+      rest.splice(index, 0, moving);
       return rest;
     });
 
@@ -199,10 +198,11 @@ export default function PinguStudio() {
   // The auto body always contrasts with the page; fixed colours close to it get a soft shadow.
   const outline =
     color !== PINGU_AUTO && (theme === "light" ? luma(color) > 0.85 : luma(color) < 0.12) ? "pingu-outline" : "";
-  // On phones the stage sticks to the top while the controls scroll under it, so it stays small.
+  // On phones the stage sticks to the top while the controls scroll under it, so it stays small;
+  // it is the same size on every tab, so Pingu does not shrink when the timeline joins it.
   const bigSize =
     viewport.w < 768
-      ? Math.round(clamp(Math.min(viewport.w * 0.5, viewport.h * (tab === "motion" ? 0.2 : 0.26)), 130, 230))
+      ? Math.round(clamp(Math.min(viewport.w * 0.5, viewport.h * 0.26), 130, 230))
       : Math.round(clamp(Math.min(viewport.w * 0.3, viewport.h * (tab === "motion" ? 0.4 : 0.55)), 260, 560));
   const filename = `pingu-${t(`shape.${shape}` as Key)}-${t(`expr.${expression}` as Key)}`.toLowerCase().replace(/\s+/g, "-");
   const bg = (transparentWanted: boolean) => (transparentWanted ? null : theme === "light" ? "#ffffff" : "#0d0d0d");
@@ -379,7 +379,7 @@ export default function PinguStudio() {
                     if (selected === key) setSelected(null);
                   }}
                   onResize={(key, dur) => setClips((c) => c.map((x) => (x.key === key ? { ...x, dur } : x)))}
-                  onReorder={reorder}
+                  onMove={move}
                   onPreset={(p) => {
                     setPlaying(false);
                     setTime(0);

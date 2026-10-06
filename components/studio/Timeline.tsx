@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { CaretDown, DownloadSimple, Minus, Pause, Play, Plus, X } from "@phosphor-icons/react";
 import { PinguAvatar, type ShapeName } from "@/avatar";
 import { useI18n } from "@/lib/i18n";
@@ -9,6 +9,13 @@ import { clipStarts, getAnimation, MAX_DUR, MIN_DUR, type Clip } from "@/lib/mon
 /* Grok Bot's montage strip: preset picker, transport, ruler, clips sized by duration. */
 
 const PX = 56; // pixels per second
+/** Touch picks a clip up after a still press, so a quick swipe still scrolls the strip. */
+const LONG_PRESS_MS = 280;
+/** Strip edge band (px) where a dragged clip scrolls it. */
+const EDGE = 40;
+
+/** A press on a clip: becomes a drag once the mouse moves, or once a finger has held still. */
+type Press = { key: string; id: number; x0: number; y0: number; scroll0: number; touch: boolean; active: boolean; timer?: number };
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 export default function Timeline({
@@ -24,7 +31,7 @@ export default function Timeline({
   onSelect,
   onRemove,
   onResize,
-  onReorder,
+  onMove,
   onPreset,
   onExport,
 }: {
@@ -40,22 +47,115 @@ export default function Timeline({
   onSelect: (key: string) => void;
   onRemove: (key: string) => void;
   onResize: (key: string, dur: number) => void;
-  onReorder: (from: string, to: string) => void;
+  /** Moves a clip to `index` among the other clips. */
+  onMove: (key: string, index: number) => void;
   onPreset: (preset: "default" | "empty") => void;
   onExport: () => void;
 }) {
   const { t } = useI18n();
-  const [dragKey, setDragKey] = useState<string | null>(null);
+  /** The clip being dragged, how far it has travelled and the slot it would drop into. */
+  const [drag, setDrag] = useState<{ key: string; dx: number; slot: number } | null>(null);
+  const press = useRef<Press | null>(null);
+  const scroller = useRef<HTMLDivElement>(null);
   /** Clip whose right edge is being dragged to change its duration. */
   const [resizing, setResizing] = useState<string | null>(null);
   const resize = useRef<{ key: string; x: number; dur: number } | null>(null);
-  /** Swallows the click that ends a resize drag, so it does not also select and seek. */
+  /** Swallows the click that ends a resize or a move, so it does not also select and seek. */
   const justResized = useRef(false);
+  const swallowClick = () => {
+    justResized.current = true;
+    window.setTimeout(() => (justResized.current = false), 0);
+  };
   const track = useRef<HTMLDivElement>(null);
   const total = clips.reduce((s, c) => s + c.dur, 0);
   const width = Math.max(total * PX, 300);
 
   const starts = clipStarts(clips);
+
+  // Once a finger has picked a clip up, its moves drag the clip instead of scrolling the strip or the
+  // page. React's touch listeners are passive, so this one is added by hand.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const hold = (e: TouchEvent) => {
+      if (press.current?.active) e.preventDefault();
+    };
+    el.addEventListener("touchmove", hold, { passive: false });
+    return () => el.removeEventListener("touchmove", hold);
+  }, []);
+
+  /** Slot among the other clips for a pointer at `x` (track px): after every clip whose middle it passed. */
+  const slotAt = (key: string, x: number) =>
+    clips.filter((c, i) => c.key !== key && (starts[i] + c.dur / 2) * PX < x).length;
+
+  const endPress = () => {
+    window.clearTimeout(press.current?.timer);
+    press.current = null;
+    setDrag(null);
+  };
+
+  const pickUp = (p: Press) => {
+    p.active = true;
+    setDrag({ key: p.key, dx: 0, slot: clips.findIndex((c) => c.key === p.key) });
+    navigator.vibrate?.(8);
+  };
+
+  const onClipDown = (e: PointerEvent<HTMLDivElement>, key: string) => {
+    // The remove, +/- buttons and the resize handle have their own gestures.
+    if (e.button !== 0 || (e.target as Element).closest("button, [role=separator]")) return;
+    const p: Press = {
+      key,
+      id: e.pointerId,
+      x0: e.clientX,
+      y0: e.clientY,
+      scroll0: scroller.current?.scrollLeft ?? 0,
+      touch: e.pointerType === "touch",
+      active: false,
+    };
+    if (p.touch) p.timer = window.setTimeout(() => press.current === p && pickUp(p), LONG_PRESS_MS);
+    press.current = p;
+  };
+
+  const onClipMove = (e: PointerEvent<HTMLDivElement>) => {
+    const p = press.current;
+    if (!p || p.id !== e.pointerId) return;
+    if (!p.active) {
+      const moved = Math.hypot(e.clientX - p.x0, e.clientY - p.y0);
+      // A finger that moves before the long press is scrolling: let it.
+      if (p.touch) return void (moved > 8 && endPress());
+      if (moved < 5) return;
+      pickUp(p);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    const sc = scroller.current;
+    const tr = track.current;
+    if (!sc || !tr) return;
+    const box = sc.getBoundingClientRect();
+    if (e.clientX < box.left + EDGE) sc.scrollLeft -= 10;
+    else if (e.clientX > box.right - EDGE) sc.scrollLeft += 10;
+    const dx = e.clientX - p.x0 + sc.scrollLeft - p.scroll0;
+    setDrag({ key: p.key, dx, slot: slotAt(p.key, e.clientX - tr.getBoundingClientRect().left) });
+  };
+
+  const onClipUp = (e: PointerEvent<HTMLDivElement>) => {
+    const p = press.current;
+    if (!p || p.id !== e.pointerId) return;
+    if (p.active && drag) {
+      if (drag.slot !== clips.findIndex((c) => c.key === p.key)) onMove(p.key, drag.slot);
+      swallowClick();
+    }
+    endPress();
+  };
+
+  // Where the dragged clip would land: the left edge of the clip it goes before, or the end.
+  const from = drag ? clips.findIndex((c) => c.key === drag.key) : -1;
+  const others = drag ? clips.map((c, i) => ({ c, i })).filter(({ c }) => c.key !== drag.key) : [];
+  const marker =
+    drag && drag.slot !== from
+      ? drag.slot < others.length
+        ? starts[others[drag.slot].i] * PX
+        : (starts[others.at(-1)!.i] + others.at(-1)!.c.dur) * PX
+      : null;
 
   const seekFromPointer = (clientX: number) => {
     const el = track.current;
@@ -105,7 +205,7 @@ export default function Timeline({
         </button>
       </div>
 
-      <div className="scroll-thin overflow-x-auto pb-2">
+      <div ref={scroller} className="scroll-thin overflow-x-auto pb-2">
         {clips.length === 0 ? (
           <p className="py-8 text-center text-[14px] text-st-muted">{t("montage.hint")}</p>
         ) : (
@@ -130,35 +230,39 @@ export default function Timeline({
             </div>
 
             {/* clips */}
-            <div className="mt-1 flex">
+            <div className="relative mt-1 flex">
               {clips.map((c, i) => {
                 const anim = getAnimation(c.anim);
                 const active = c.key === selected;
+                const lifted = drag?.key === c.key;
                 return (
                   <div
                     key={c.key}
-                    draggable={resizing === null}
-                    onDragStart={() => setDragKey(c.key)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => {
-                      if (dragKey && dragKey !== c.key) onReorder(dragKey, c.key);
-                      setDragKey(null);
-                    }}
-                    // A drop outside any clip never fires onDrop: clear the faded state here too.
-                    onDragEnd={() => setDragKey(null)}
+                    onPointerDown={(e) => onClipDown(e, c.key)}
+                    onPointerMove={onClipMove}
+                    onPointerUp={onClipUp}
+                    onPointerCancel={endPress}
+                    // A long press would otherwise open the browser's context menu.
+                    onContextMenu={(e) => e.preventDefault()}
                     onClick={() => {
                       if (justResized.current) return;
                       onSelect(c.key);
                       onSeek(starts[i] + 0.001);
                     }}
-                    className="group relative shrink-0 cursor-grab px-0.5 active:cursor-grabbing"
-                    style={{ width: c.dur * PX }}
+                    className={`group relative shrink-0 cursor-grab select-none px-0.5 [-webkit-touch-callout:none] ${
+                      lifted ? "z-10 cursor-grabbing" : ""
+                    }`}
+                    style={{ width: c.dur * PX, transform: lifted ? `translateX(${drag.dx}px)` : undefined }}
                     title={t(anim.label)}
                   >
                     <div
                       className={`flex h-[84px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border-2 transition ${
-                        active ? "border-st-selected bg-st-surface" : "border-transparent bg-st-hover hover:border-st-line"
-                      } ${dragKey === c.key ? "opacity-40" : ""}`}
+                        lifted
+                          ? "scale-105 border-st-selected bg-st-raised shadow-[var(--st-shadow)]"
+                          : active
+                            ? "border-st-selected bg-st-surface"
+                            : "border-transparent bg-st-hover hover:border-st-line"
+                      }`}
                     >
                       <PinguAvatar size={34} shape={anim.shape ?? shape} color={color} state={anim.state} animated={false} className={outline} />
                       <span className="flex items-center gap-1 whitespace-nowrap text-[12px] tabular-nums text-st-muted">
@@ -214,8 +318,7 @@ export default function Timeline({
                         e.currentTarget.releasePointerCapture(e.pointerId);
                         resize.current = null;
                         setResizing(null);
-                        justResized.current = true;
-                        window.setTimeout(() => (justResized.current = false), 0);
+                        swallowClick();
                       }}
                       onPointerCancel={() => {
                         resize.current = null;
@@ -247,6 +350,12 @@ export default function Timeline({
                   </div>
                 );
               })}
+              {marker !== null && (
+                <span
+                  className="pointer-events-none absolute inset-y-1 w-0.5 -translate-x-1/2 rounded-full bg-st-selected"
+                  style={{ left: marker }}
+                />
+              )}
             </div>
 
             {/* playhead */}
