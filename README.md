@@ -29,8 +29,17 @@ the penguins only joke in Italian.
 
 ## Tour
 
-The studio is one page with three tabs on the floating rail (Customise, Animation, Settings),
-plus the chat and a reference sheet. Every page has a light and a dark theme.
+The demo chat comes first, then the studio: one page with three tabs on the floating rail
+(Customise, Animation, Settings), and a reference sheet. Every page has a light and a dark
+theme; the screenshots are in dark mode.
+
+### Chat · [`/chat`](https://pingu-avatar.vercel.app/chat)
+
+A Grok-style chat with penguin personas: a LinkedIn strategist, a social media critic, a career
+coach, a dating coach, a chef, and Colonia, a group chat where they all answer. Each reply is one
+line, typed out while the avatar lip-syncs and then reacts with a mood.
+
+![The demo chat](docs/chat.png)
 
 ### Customise · [`/`](https://pingu-avatar.vercel.app)
 
@@ -54,14 +63,6 @@ Interface language, a pose you can lock (turn, tilt, roll), whether Pingu follow
 or dozes off when ignored, and a transparent background for exports.
 
 ![The Settings tab](docs/settings.png)
-
-### Chat · [`/chat`](https://pingu-avatar.vercel.app/chat)
-
-A Grok-style chat with penguin personas: a LinkedIn strategist, a social media critic, a career
-coach, a dating coach, a chef, and Colonia, a group chat where they all answer. Each reply is one
-line, typed out while the avatar lip-syncs and then reacts with a mood.
-
-![The demo chat](docs/chat.png)
 
 ### Expressions · [`/espressioni`](https://pingu-avatar.vercel.app/espressioni)
 
@@ -111,10 +112,10 @@ npm run dev        # http://localhost:3000
 
 | Page | |
 |---|---|
+| `/chat` | The demo chat |
 | `/` | Studio, Customise tab |
 | `/?tab=motion` | Studio, Animation tab (montage editor) |
 | `/?tab=settings` | Studio, Settings tab |
-| `/chat` | The demo chat |
 | `/espressioni` | Reference sheet of the 16 poses |
 
 ## Structure
