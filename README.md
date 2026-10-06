@@ -27,9 +27,48 @@
 Everything runs in the browser. The interface is in English, Italian, Spanish and Chinese;
 the penguins only joke in Italian.
 
-![The avatar studio](docs/studio.png)
+## Tour
+
+The studio is one page with three tabs on the floating rail (Customise, Animation, Settings),
+plus the chat and a reference sheet. Every page has a light and a dark theme.
+
+### Customise · [`/`](https://pingu-avatar.vercel.app)
+
+Pick a body shape, an expression and a colour, and watch Pingu morph between them. The export
+button downloads or copies the result as PNG, SVG, animated SVG or GIF.
+
+![The Customise tab](docs/studio.png)
+
+### Animation · [`/?tab=motion`](https://pingu-avatar.vercel.app/?tab=motion)
+
+Click animations (wink, orbit, noot!, laugh…) to line them up on a timeline, drag a clip's edge
+to change its length, and play the montage back. **Export** records it as an MP4 (white background) or
+a GIF (white or transparent). You can also type a line and make Pingu say it, with
+lip-sync.
+
+![The Animation tab](docs/animation.png)
+
+### Settings · [`/?tab=settings`](https://pingu-avatar.vercel.app/?tab=settings)
+
+Interface language, a pose you can lock (turn, tilt, roll), whether Pingu follows the cursor
+or dozes off when ignored, and a transparent background for exports.
+
+![The Settings tab](docs/settings.png)
+
+### Chat · [`/chat`](https://pingu-avatar.vercel.app/chat)
+
+A Grok-style chat with penguin personas: a LinkedIn strategist, a social media critic, a career
+coach, a dating coach, a chef, and Colonia, a group chat where they all answer. Each reply is one
+line, typed out while the avatar lip-syncs and then reacts with a mood.
 
 ![The demo chat](docs/chat.png)
+
+### Expressions · [`/espressioni`](https://pingu-avatar.vercel.app/espressioni)
+
+The 16 poses of the original reference sheet as still frames (in Italian): handy to check the
+faces side by side while working on the engine.
+
+![The expression sheet](docs/expressions.png)
 
 ## Use the avatar in your project
 
@@ -72,9 +111,11 @@ npm run dev        # http://localhost:3000
 
 | Page | |
 |---|---|
-| [`/`](https://pingu-avatar.vercel.app) | The studio |
-| [`/chat`](https://pingu-avatar.vercel.app/chat) | The demo chat |
-| [`/espressioni`](https://pingu-avatar.vercel.app/espressioni) | Every expression on one sheet |
+| `/` | Studio, Customise tab |
+| `/?tab=motion` | Studio, Animation tab (montage editor) |
+| `/?tab=settings` | Studio, Settings tab |
+| `/chat` | The demo chat |
+| `/espressioni` | Reference sheet of the 16 poses |
 
 ## Structure
 
