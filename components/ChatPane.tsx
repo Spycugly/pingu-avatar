@@ -7,7 +7,7 @@ import { emitPingu, PinguAvatar, syllableFor, type EngineState } from "@/avatar"
 import { noot } from "@/lib/noot";
 import { dayTime } from "@/lib/time";
 import { useI18n, type Key } from "@/lib/i18n";
-import type { Message, Status } from "@/hooks/useChat";
+import { messageText, type Message, type Status } from "@/hooks/useChat";
 import AgentAvatar from "./AgentAvatar";
 import Tooltip from "./Tooltip";
 
@@ -45,9 +45,10 @@ export default function ChatPane({
   onTyped,
   onBack,
 }: Props) {
-  const { t, locale } = useI18n();
+  const { t, locale, lang } = useI18n();
   const words = { locale, today: t("chat.today"), yesterday: t("chat.yesterday") };
   const agent = getAgent(agentId);
+  const name = agent.copy[lang].name;
   const isGroup = !!agent.members;
   const busy = status !== "idle";
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -110,10 +111,10 @@ export default function ChatPane({
           animated
           ring="var(--gb-main)"
           onClick={poke}
-          title={t("chat.poke", { name: agent.name })}
+          title={t("chat.poke", { name })}
         />
         <div className="ml-1 flex min-w-0 items-baseline gap-2">
-          <h1 className="truncate text-[13px] leading-[18px] text-gb-text">{agent.name}</h1>
+          <h1 className="truncate text-[13px] leading-[18px] text-gb-text">{name}</h1>
           {busy && (
             <span className="shimmer-text truncate text-[12px] leading-4">
               {status === "thinking" ? t("chat.thinking") : t("chat.typing")}
@@ -163,13 +164,13 @@ export default function ChatPane({
                   >
                     {t("chat.messageFrom")}
                     <PinguAvatar size={15} color={speaker.color} shape={speaker.shape} animated={false} />
-                    <span className="text-gb-text">{speaker.name}</span>
+                    <span className="text-gb-text">{speaker.copy[lang].name}</span>
                   </p>
                 )}
 
                 {m.role === "system" && (
                   <p className={`text-center text-[13px] leading-4 text-gb-text-2 ${showTime ? "mt-3" : "mt-5"}`}>
-                    {m.text}
+                    {messageText(m, lang)}
                   </p>
                 )}
 
@@ -181,7 +182,7 @@ export default function ChatPane({
                     {m.reaction && (
                       <span
                         className="reaction-pop absolute -bottom-[14px] right-[10px] flex size-[22px] items-center justify-center rounded-full bg-gb-reaction ring-2 ring-gb-main"
-                        title={t("chat.reaction", { name: agent.name })}
+                        title={t("chat.reaction", { name })}
                       >
                         {/* Emoji font metrics, not the text font's, so the glyph sits in the middle. */}
                         <span className="block text-[12px] leading-none [font-family:'Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif]">
@@ -205,7 +206,7 @@ export default function ChatPane({
                         state={m.typing ? "talking" : m === lastPingu && linger ? (m.mood ?? "happy") : "idle"}
                       />
                       <div className="min-w-0 whitespace-pre-wrap rounded-2xl bg-gb-bubble px-3 py-2 text-[14px] leading-5 text-gb-text">
-                        <TypeText text={m.text} animate={!!m.typing} voice={voice} onDone={() => onTyped(m.id)} />
+                        <TypeText text={messageText(m, lang)} animate={!!m.typing} voice={voice} onDone={() => onTyped(m.id)} />
                       </div>
                     </div>
                     {m.tokenGag && !m.typing && (
@@ -233,7 +234,7 @@ export default function ChatPane({
       <div className="relative shrink-0 px-5 pb-3">
         <div className="composer-fade pointer-events-none absolute inset-x-0 -top-12 h-12" />
         <Composer
-          name={agent.name}
+          name={name}
           busy={busy}
           onSend={onSend}
           onTyping={(on) => {
@@ -364,7 +365,7 @@ function Composer({
   onKey: () => void;
   onDeaf: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [text, setText] = useState("");
   const [deaf, setDeaf] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -391,7 +392,7 @@ function Composer({
       <button
         type="button"
         onClick={() => {
-          setText(SUGGESTIONS[Math.floor(Math.random() * SUGGESTIONS.length)]);
+          setText(SUGGESTIONS[lang][Math.floor(Math.random() * SUGGESTIONS[lang].length)]);
           onTyping(true);
           inputRef.current?.focus();
         }}

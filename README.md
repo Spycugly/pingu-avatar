@@ -24,8 +24,8 @@
 - **A demo chat** where penguin personas answer with one dry one-liner. There is no backend
   and no LLM: replies come from keyword rules, and the avatar lip-syncs as each line types out.
 
-Everything runs in the browser. The interface is in English, Italian, Spanish and Chinese;
-the penguins only joke in Italian.
+Everything runs in the browser, in English, Italian, Spanish and Chinese: the interface and
+the penguins' jokes alike. Switching language re-translates the chat history too.
 
 ## Tour
 

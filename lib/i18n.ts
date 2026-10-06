@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-/* Interface language for the studio and the chat, English by default. Pingu's jokes stay in Italian. */
+/* Interface language for the studio and the chat, English by default. The chat copy itself (jokes, personas) lives in lib/pingu-brain.ts and lib/agents.ts. */
 
 export type Lang = "it" | "en" | "es" | "zh";
 

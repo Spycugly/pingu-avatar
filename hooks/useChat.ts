@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AGENTS, getAgent } from "@/lib/agents";
-import { getPinguReply } from "@/lib/pingu-brain";
+import { getPinguReply, greetingLine, lineForItalian, lineText, RESET_LINE } from "@/lib/pingu-brain";
+import type { Lang } from "@/lib/i18n";
 import { noot } from "@/lib/noot";
 import type { EngineState } from "@/avatar";
 
@@ -11,7 +12,10 @@ export type Status = "idle" | "thinking" | "talking";
 export type Message = {
   id: string;
   role: "user" | "pingu" | "system";
+  /** What was typed (user) or the Italian line, kept as a fallback for `line`. */
   text: string;
+  /** Pingu/system copy is stored as a line id and rendered in the current language (see `messageText`). */
+  line?: string;
   at: number;
   /** Which penguin spoke (differs from the thread in group chats). */
   from?: string;
@@ -43,14 +47,23 @@ export type Flourish = { state: EngineState; id: number };
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/** A message's text in the interface language. */
+export const messageText = (m: Message, lang: Lang) => (m.line && lineText(m.line, lang)) ?? m.text;
+
+/** A Pingu or system message for a line id. */
+const lineMessage = (role: Message["role"], line: string, at: number) => ({
+  id: uid(),
+  role,
+  line,
+  text: lineText(line, "it") ?? "",
+  at,
+});
+
 function greetingThread(agentId: string, at = Date.now()): Message[] {
   const agent = getAgent(agentId);
   return [
     {
-      id: uid(),
-      role: "pingu",
-      text: agent.greeting,
-      at,
+      ...lineMessage("pingu", greetingLine(agent.id), at),
       from: agent.members ? agent.members[0] : agent.id,
     },
   ];
@@ -63,7 +76,12 @@ function loadThreads(): Threads {
   } catch {}
   const threads: Threads = {};
   AGENTS.forEach((a, i) => {
-    const msgs = saved[a.id]?.map((m) => ({ ...m, typing: false }));
+    // Threads saved before line ids existed hold Italian text: map it back to its line so it translates.
+    const msgs = saved[a.id]?.map((m) => ({
+      ...m,
+      line: m.line ?? (m.role === "user" ? undefined : lineForItalian(m.text)),
+      typing: false,
+    }));
     threads[a.id] = msgs?.length ? msgs : greetingThread(a.id, Date.now() - i * 47 * 60_000);
   });
   return threads;
@@ -138,8 +156,8 @@ export function useChat() {
       const hasUserTurn = before.some((m) => m.role === "user");
       const reply = getPinguReply(text, {
         agentId: speaker,
-        previousPingu: hasUserTurn && lastMsg?.role === "pingu" ? lastMsg.text : undefined,
-        recent: before.filter((m) => m.role === "pingu").slice(-12).map((m) => m.text),
+        answering: hasUserTurn && lastMsg?.role === "pingu",
+        recent: before.flatMap((m) => (m.role === "pingu" && m.line ? [m.line] : [])).slice(-12),
       });
       const reaction =
         Math.random() < 0.35 ? REACTIONS[Math.floor(Math.random() * REACTIONS.length)] : undefined;
@@ -149,10 +167,7 @@ export function useChat() {
         [agentId]: [
           ...t[agentId].map((m) => (m.id === userMsg.id ? { ...m, reaction } : m)),
           {
-            id: uid(),
-            role: "pingu",
-            text: reply.text,
-            at: Date.now(),
+            ...lineMessage("pingu", reply.line, Date.now()),
             from: speaker,
             tokenGag: reply.tokenGag,
             mood: reply.mood,
@@ -180,7 +195,7 @@ export function useChat() {
     setThreads((t) => ({
       ...t,
       [agentId]: [
-        { id: uid(), role: "system", text: "Nuova chat. Pingu ha già dimenticato tutto.", at: Date.now() },
+        lineMessage("system", RESET_LINE, Date.now()),
         ...greetingThread(agentId),
       ],
     }));

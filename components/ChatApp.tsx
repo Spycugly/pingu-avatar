@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { GithubLogo, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { AGENTS, getAgent } from "@/lib/agents";
 import { shortTime } from "@/lib/time";
-import { useChat, type Message, type Status } from "@/hooks/useChat";
+import { messageText, useChat, type Message, type Status } from "@/hooks/useChat";
 import { emitPingu, type EngineState, type PinguEvent } from "@/avatar";
 import AgentAvatar from "./AgentAvatar";
 import NavRail, { useTheme } from "./NavRail";
@@ -16,7 +16,7 @@ import Tooltip from "./Tooltip";
 
 /* Dimensions mirror the Grokbot demo on x.ai/bot: a 976×660 shell, 280px sidebar. */
 export default function ChatApp() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const chat = useChat();
   const [theme, setTheme] = useTheme();
   const [activeId, setActiveId] = useState("pingu");
@@ -34,7 +34,7 @@ export default function ChatApp() {
     setMobileView("chat");
   };
 
-  const agents = AGENTS.filter((a) => a.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const agents = AGENTS.filter((a) => a.copy[lang].name.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
     <main
@@ -210,7 +210,7 @@ function SidebarItem({
   unread: boolean;
   onClick: () => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, lang } = useI18n();
   const agent = getAgent(agentId);
   const mood = useFidget(agentId, !active && !watching && status === "idle" && !flourish);
   const last = [...messages].reverse().find((m) => m.role !== "system");
@@ -220,7 +220,7 @@ function SidebarItem({
       : last?.typing
         ? t("chat.typing")
         : last
-          ? `${last.role === "user" ? t("chat.youPrefix") : ""}${last.text}`
+          ? `${last.role === "user" ? t("chat.youPrefix") : ""}${messageText(last, lang)}`
           : "";
 
   return (
@@ -245,7 +245,7 @@ function SidebarItem({
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-[14px] leading-5 tracking-[-0.15px] text-gb-side-1">{agent.name}</span>
+          <span className="truncate text-[14px] leading-5 tracking-[-0.15px] text-gb-side-1">{agent.copy[lang].name}</span>
           {last && <span className="shrink-0 text-[12px] leading-4 text-gb-side-3">{shortTime(last.at, { locale, today: t("chat.today"), yesterday: t("chat.yesterday") })}</span>}
         </div>
         <p className={`truncate text-[12px] leading-4 ${status !== "idle" ? "shimmer-text" : "text-gb-side-2"}`}>
