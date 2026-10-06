@@ -14,25 +14,28 @@ import { useI18n, type Key } from "@/lib/i18n";
 export type RailItem = "chat" | "style" | "motion" | "settings";
 export type Theme = "light" | "dark";
 
-const THEME_KEY = "pingu-studio-theme";
+/** Read by the inline script in app/layout.tsx too. (The old "pingu-studio-theme" key saved the
+    default on every first visit, so it can't tell a choice from a default: it is ignored.) */
+const THEME_KEY = "pingu-theme";
 
-/** Light/dark theme of the studio and the chat, shared by both pages and kept in localStorage.
+/** Light/dark theme of the studio and the chat, shared by both pages. Dark by default; only a
+    theme picked with the switch is kept in localStorage.
     Switching cross-fades the whole page through a view transition where the browser has one. */
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
-      return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
+      return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
     } catch {
-      return "light";
+      return "dark";
     }
   });
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {}
   }, [theme]);
   const change = useCallback((next: Theme) => {
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {}
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced || !document.startViewTransition) return setTheme(next);
     document.startViewTransition(() => flushSync(() => setTheme(next)));

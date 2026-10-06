@@ -196,14 +196,15 @@ export default function ChatPane({
                 {m.role === "pingu" && (
                   <div className={`msg-pop flex flex-col items-start ${gap}`}>
                     <div className="flex max-w-[85%] items-end gap-2.5">
-                      {/* Pingu sits beside his line: talks while it types, then pulls the face that fits it. */}
+                      {/* Pingu sits beside his line: talks while it types, pulls the face that fits it, then keeps
+                          that face as a still frame, so the transcript reads as a row of expressions. */}
                       <PinguAvatar
                         size={40}
                         color={speaker.color}
                         shape={speaker.shape}
                         agentId={voice}
-                        animated={!!m.typing || m === lastPingu}
-                        state={m.typing ? "talking" : m === lastPingu && linger ? (m.mood ?? "happy") : "idle"}
+                        animated={!!m.typing || (m === lastPingu && linger)}
+                        state={m.typing ? "talking" : (m.mood ?? "idle")}
                       />
                       <div className="min-w-0 whitespace-pre-wrap rounded-2xl bg-gb-bubble px-3 py-2 text-[14px] leading-5 text-gb-text">
                         <TypeText text={messageText(m, lang)} animate={!!m.typing} voice={voice} onDone={() => onTyped(m.id)} />
@@ -291,7 +292,8 @@ function TypeText({
 /**
  * Grok-style pending row. Thinking runs in phases: a short warm-up, the thinking dots, then
  * "beats" (searching, writing, working…) with their own labels. When the reply lands Pingu is
- * surprised for a moment, talks with the typewriter, then lingers on the face that fits his line.
+ * surprised for a moment, talks with the typewriter, then lingers on the face that fits his line
+ * (and the message keeps that face once he stops).
  */
 type Phase = { state: EngineState; label?: Key };
 
