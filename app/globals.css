@@ -1,0 +1,317 @@
+@import "tailwindcss";
+/* The avatar's theme for color="auto" (black Pingu in light mode), shared with avatar/. */
+@import "../avatar/pingu-avatar.css";
+
+/* `dark:` follows the app's own theme switch (data-theme on <html>), not the OS setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Grokbot tokens, read from x.ai/bot (--grok-bot-*) and flattened onto the dark page. */
+:root {
+  --gb-page: #0d0d0d;
+  --gb-sidebar: #151514;
+  --gb-main: #202020;
+  --gb-ring: rgba(255, 255, 255, 0.07);
+  --gb-text: #f2f2f2;
+  --gb-text-2: rgba(255, 255, 255, 0.58);
+  --gb-text-3: rgba(255, 255, 255, 0.36);
+  --gb-side-1: rgba(255, 255, 255, 0.9);
+  --gb-side-2: rgba(255, 255, 255, 0.55);
+  --gb-side-3: rgba(255, 255, 255, 0.32);
+  --gb-selected: rgba(255, 255, 255, 0.075);
+  --gb-hover: rgba(255, 255, 255, 0.05);
+  --gb-border: rgba(255, 255, 255, 0.12);
+  --gb-fill: rgba(255, 255, 255, 0.06);
+  --gb-search: rgba(255, 255, 255, 0.07);
+  --gb-bubble: rgba(255, 255, 255, 0.06);
+  --gb-user: #ecece8;
+  --gb-user-ink: #141414;
+  --gb-emphasis: #f0f0f0;
+  --gb-emphasis-hover: #ffffff;
+  --gb-reaction: #2d2d2d;
+  --gb-composer: rgba(38, 38, 38, 0.68);
+  --gb-scroll: #464646;
+  --gb-divider: rgba(255, 255, 255, 0.06);
+  --gb-search-border: rgba(255, 255, 255, 0.12);
+}
+/* The unread badge on chat avatars is ringed in the sidebar colour. */
+.chat {
+  --pingu-badge-ring: var(--gb-sidebar);
+}
+
+/* Chat light theme (the rail's theme switch, shared with the studio). Dark is the default above.
+   Surfaces sampled from Grok Bot's light mode on x.ai/bot. */
+.chat[data-theme="light"] {
+  --gb-page: #ffffff;
+  --gb-sidebar: #fcfcfc;
+  --gb-main: #fbfbfb;
+  --gb-ring: #e9e9e9;
+  --gb-text: #141414;
+  --gb-text-2: rgba(0, 0, 0, 0.56);
+  --gb-text-3: rgba(0, 0, 0, 0.38);
+  --gb-side-1: rgba(0, 0, 0, 0.88);
+  --gb-side-2: rgba(0, 0, 0, 0.55);
+  --gb-side-3: rgba(0, 0, 0, 0.36);
+  --gb-selected: #efefef;
+  --gb-hover: rgba(0, 0, 0, 0.035);
+  --gb-border: #e2e2e2;
+  --gb-fill: #f2f2f1;
+  --gb-search: #f0f0f0;
+  --gb-search-border: #cecece;
+  --gb-bubble: #f3f3f2;
+  --gb-user: #121211;
+  --gb-user-ink: #ffffff;
+  --gb-emphasis: #121211;
+  --gb-emphasis-hover: #000000;
+  --gb-reaction: #f3f3f2;
+  --gb-composer: #fcfcfc;
+  --gb-scroll: #c9c9c6;
+  --gb-divider: #e0e0e0;
+  --pingu-fx: #1a1a1a;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-gb-page: var(--gb-page);
+  --color-gb-sidebar: var(--gb-sidebar);
+  --color-gb-main: var(--gb-main);
+  --color-gb-ring: var(--gb-ring);
+  --color-gb-text: var(--gb-text);
+  --color-gb-text-2: var(--gb-text-2);
+  --color-gb-text-3: var(--gb-text-3);
+  --color-gb-side-1: var(--gb-side-1);
+  --color-gb-side-2: var(--gb-side-2);
+  --color-gb-side-3: var(--gb-side-3);
+  --color-gb-selected: var(--gb-selected);
+  --color-gb-hover: var(--gb-hover);
+  --color-gb-border: var(--gb-border);
+  --color-gb-fill: var(--gb-fill);
+  --color-gb-search: var(--gb-search);
+  --color-gb-bubble: var(--gb-bubble);
+  --color-gb-user: var(--gb-user);
+  --color-gb-user-ink: var(--gb-user-ink);
+  --color-gb-emphasis: var(--gb-emphasis);
+  --color-gb-emphasis-hover: var(--gb-emphasis-hover);
+  --color-gb-reaction: var(--gb-reaction);
+  --color-gb-composer: var(--gb-composer);
+  --color-gb-divider: var(--gb-divider);
+  --color-gb-search-border: var(--gb-search-border);
+  --color-st-bg: var(--st-bg);
+  --color-st-surface: var(--st-surface);
+  --color-st-raised: var(--st-raised);
+  --color-st-ink: var(--st-ink);
+  --color-st-ink-2: var(--st-ink-2);
+  --color-st-muted: var(--st-muted);
+  --color-st-line: var(--st-line);
+  --color-st-line-strong: var(--st-line-strong);
+  --color-st-hover: var(--st-hover);
+  --color-st-accent: var(--st-accent);
+  --color-st-accent-ink: var(--st-accent-ink);
+  --color-st-selected: var(--st-selected);
+  --color-st-track: var(--st-track);
+  --color-st-knob: var(--st-knob);
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--gb-page);
+  color: var(--gb-text);
+}
+/* The page behind both routes follows the theme too: it shows while a page fades in. */
+html[data-theme="light"] body {
+  background: #ffffff;
+  color: #141414;
+}
+
+/* ---------- Pingu avatar ---------- */
+/* Motion lives in avatar/engine (one requestAnimationFrame loop); only layout here. */
+.pingu {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Chat UI ---------- */
+.shimmer-text {
+  background: linear-gradient(90deg, #6b6b6b 0%, #6b6b6b 35%, #c8c8c8 50%, #6b6b6b 65%, #6b6b6b 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.8s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -150% 0; }
+}
+
+.msg-pop {
+  animation: msg-pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes msg-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.reaction-pop {
+  animation: reaction-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes reaction-pop {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+.wiggle {
+  animation: wiggle 0.4s ease-in-out;
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-12deg); }
+  75% { transform: rotate(12deg); }
+}
+
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: currentColor;
+  opacity: 0.6;
+  animation: caret 0.8s steps(1) infinite;
+}
+@keyframes caret {
+  50% { opacity: 0; }
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gb-scroll) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 10px;
+}
+/* Scrolls without a visible bar: side panels whose bar flickered through the page transitions. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.composer-fade {
+  background: linear-gradient(to bottom, transparent, var(--gb-main));
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--gb-scroll);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+/* Pending-row label: each new beat slides in, like Grok's keyed label. */
+.presence-label {
+  animation: presence-label 0.32s cubic-bezier(0.22, 1, 0.36, 1) both, shimmer 1.8s linear infinite;
+}
+@keyframes presence-label {
+  from { opacity: 0; transform: translateY(4px); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* Route change (studio <-> chat): React's <ViewTransition> cross-fades the pages, with no empty
+   frame in between, while the rail (same name on both pages) stays put above them. */
+::view-transition-old(.page-swap) {
+  animation: 160ms ease-in both page-out;
+}
+::view-transition-new(.page-swap) {
+  animation: 260ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms both page-in;
+}
+@keyframes page-out {
+  to { opacity: 0; }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+::view-transition-group(.rail-anchor) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(.rail-anchor) {
+  display: none;
+}
+::view-transition-new(.rail-anchor) {
+  animation: none;
+}
+/* Clicks pass through to the live page while a transition runs. */
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+  .presence-label,
+  .msg-pop,
+  .reaction-pop,
+  .shimmer-text,
+  .wiggle {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Studio (home page): light and dark themes. */
+.studio[data-theme="light"] {
+  --st-bg: #ffffff;
+  --st-surface: #ffffff;
+  --st-raised: #ffffff;
+  --st-ink: #1a1a1a;
+  --st-ink-2: #333333;
+  --st-muted: #8a8a8a;
+  --st-line: rgba(0, 0, 0, 0.1);
+  --st-line-strong: rgba(0, 0, 0, 0.25);
+  --st-hover: rgba(0, 0, 0, 0.04);
+  --st-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --st-accent: #141414;
+  --st-accent-ink: #ffffff;
+  --st-selected: #1a1a1a;
+  --st-track: rgba(0, 0, 0, 0.15);
+  --st-knob: #ffffff;
+  --pingu-fx: #1a1a1a;
+  color-scheme: light;
+}
+.studio[data-theme="dark"] {
+  --st-bg: #0d0d0d;
+  --st-surface: #1c1c1c;
+  --st-raised: #262626;
+  --st-ink: #f2f2f2;
+  --st-ink-2: #d9d9d9;
+  --st-muted: rgba(255, 255, 255, 0.55);
+  --st-line: rgba(255, 255, 255, 0.12);
+  --st-line-strong: rgba(255, 255, 255, 0.3);
+  --st-hover: rgba(255, 255, 255, 0.06);
+  --st-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  --st-accent: #f0f0f0;
+  --st-accent-ink: #141414;
+  --st-selected: #f2f2f2;
+  --st-track: rgba(255, 255, 255, 0.2);
+  --st-knob: #1c1c1c;
+  --pingu-fx: #f2f2f2;
+  color-scheme: dark;
+}
+
+/* Theme switch: the whole page cross-fades (useTheme wraps the change in a view transition). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* No outline: a body the same tone as the page gets a soft shadow instead, so it still reads. */
+.pingu-outline {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
+}
+.studio[data-theme="dark"] .pingu-outline {
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.14));
+}

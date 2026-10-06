@@ -1,0 +1,34 @@
+/* Optional theme for <PinguAvatar color="auto"> (the default colour).
+   Without this file "auto" is the white Pingu with dark eyes. With it, Pingu turns black with
+   light eyes on light pages: by the OS setting, and by a data-theme="light|dark" attribute or a
+   .light/.dark class on any ancestor (the attribute or class wins over the OS setting).
+
+   Other variables you can set on any ancestor:
+     --pingu-fx           comic marks (sound lines, "!", "?", "z"), defaults to currentColor
+     --pingu-sweat        sweat drop fill, defaults to #6ec4ff
+     --pingu-sweat-line   sweat drop outline, defaults to #2b8fd6
+     --pingu-badge-ring   ring around the unread badge, defaults to #151514 */
+
+:root {
+  --pingu-auto-body: #f7f7f4;
+  --pingu-auto-eye: #0b0b0b;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --pingu-auto-body: #0b0b0b;
+    --pingu-auto-eye: #f7f7f4;
+  }
+}
+
+[data-theme="light"],
+.light {
+  --pingu-auto-body: #0b0b0b;
+  --pingu-auto-eye: #f7f7f4;
+}
+
+[data-theme="dark"],
+.dark {
+  --pingu-auto-body: #f7f7f4;
+  --pingu-auto-eye: #0b0b0b;
+}
