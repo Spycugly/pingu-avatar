@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-/* Interface language for the studio and the chat, English by default. The chat copy itself (jokes, personas) lives in lib/pingu-brain.ts and lib/agents.ts. */
+/* Interface language for the studio and the chat: the saved choice, else the browser's language, else English. The chat copy itself (jokes, personas) lives in lib/pingu-brain.ts and lib/agents.ts. */
 
 export type Lang = "it" | "en" | "es" | "zh";
 
@@ -621,13 +621,25 @@ const DICTS: Record<Lang, Dict> = { it, en, es, zh };
 const KEY = "pingu-lang";
 const listeners = new Set<() => void>();
 
-function read(): Lang {
-  try {
-    const v = localStorage.getItem(KEY);
-    return v === "it" || v === "es" || v === "zh" ? v : "en";
-  } catch {
-    return "en";
+const isLang = (v: unknown): v is Lang => LANGS.some((l) => l.id === v);
+
+/** First browser language we speak ("it-IT" → "it"), else English. Not saved: only a manual choice is. */
+function detect(): Lang {
+  for (const tag of navigator.languages ?? [navigator.language]) {
+    const base = tag.toLowerCase().split("-")[0];
+    if (isLang(base)) return base;
   }
+  return "en";
+}
+
+function read(): Lang {
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(KEY);
+  } catch {}
+  const lang = isLang(saved) ? saved : detect();
+  document.documentElement.lang = lang;
+  return lang;
 }
 
 let current: Lang | null = null;

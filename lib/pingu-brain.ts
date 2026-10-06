@@ -52,7 +52,7 @@ const REPLIES: Record<string, Category> = {
         "Engagement glaciale. E me ne intendo.",
       ],
       en: [
-        "Bold. Wrong, but bold.",
+        "Very 'my cousin does our social media'.",
         "I've seen better. In a car park.",
         "Three likes. All from your mum.",
         "Brave filter. The face, less so.",
@@ -60,19 +60,19 @@ const REPLIES: Record<string, Category> = {
         "Glacial engagement. And I'd know.",
       ],
       es: [
-        "Valiente. Equivocado, pero valiente.",
-        "He visto cosas mejores. En un aparcamiento.",
+        "Muy de 'las redes las lleva mi primo'.",
+        "He visto cosas mejores. En un parking.",
         "Tres likes. Todos de tu madre.",
         "Filtro valiente. La cara, menos.",
         "Publícalo. Luego bórralo.",
-        "Engagement glacial. Y de eso yo sé.",
+        "Engagement glacial. Y de hielo yo sé un rato.",
       ],
       zh: [
-        "很勇敢。错了，但勇敢。",
+        "很有“我表哥帮我运营的”感觉。",
         "我见过更好的。在停车场。",
-        "三个赞。全是你妈点的。",
-        "滤镜很勇敢。脸没那么勇敢。",
-        "发出去。然后删掉。",
+        "三个赞。全是七大姑八大姨点的。",
+        "美颜开到最大。还是不够。",
+        "发出去。然后设成三天可见。",
         "互动冷得像冰。这我在行。",
       ],
     },
@@ -96,7 +96,7 @@ const REPLIES: Record<string, Category> = {
       ],
       en: [
         "I'm a penguin. You?",
-        "Artificial intelligence. Mostly artificial.",
+        "Artificial intelligence. Heavy on the artificial.",
         "I'm Pingu. The only one with a beak and answers.",
         "Language model. Mostly bad language.",
       ],
@@ -106,7 +106,7 @@ const REPLIES: Record<string, Category> = {
         "Soy Pingu. El único con pico y respuestas.",
         "Modelo de lenguaje. De lengua larga, sobre todo.",
       ],
-      zh: ["我是企鹅。你呢？", "人工智能。主要是人工。", "我是 Pingu。唯一一个有喙又有答案的。", "语言模型。主要是毒舌模型。"],
+      zh: ["我是企鹅。你呢？", "人工智能？人工智障。", "我是 Pingu。唯一一个有喙又有答案的。", "语言模型。主要是毒舌模型。"],
     },
   },
   barzelletta: {
@@ -125,10 +125,10 @@ const REPLIES: Record<string, Category> = {
       es: [
         "Tú.",
         "Tu último post.",
-        "Un pingüino entra en un bar. Fin. Se acabó el presupuesto.",
+        "Esto es un pingüino que entra en un bar. Fin. No hay presupuesto.",
         "Tu pregunta. Buena esa.",
       ],
-      zh: ["你。", "你上一条帖子。", "一只企鹅走进酒吧。完。预算用完了。", "你的问题。这个好笑。"],
+      zh: ["你。", "你上一条帖子。", "从前有座山，山里有只企鹅。完。预算没了。", "你的问题。这个好笑。"],
     },
   },
   lavoro: {
@@ -153,17 +153,17 @@ const REPLIES: Record<string, Category> = {
         "I could help. I won't.",
         "Do it tomorrow. Actually, never.",
         "I delegated it. To you.",
-        "This could have been an email. Or nothing.",
+        "Per my last email: no.",
         "The client is always right. Yours isn't.",
       ],
       es: [
         "Podría ayudarte. Pero no quiero.",
-        "Hazlo mañana. Mejor, nunca.",
+        "Mañana lo miro. Spoiler: no.",
         "Lo he delegado. A ti.",
         "Esto podía ser un correo. O nada.",
         "El cliente siempre tiene razón. El tuyo no.",
       ],
-      zh: ["我能帮你。但我不想。", "明天再做。算了，别做了。", "我已经委派了。给你。", "这本来可以发封邮件。或者干脆不发。", "客户永远是对的。你的客户除外。"],
+      zh: ["我能帮你。但我不想。", "躺平吧。我已经躺了。", "我已经委派了。给你。", "收到。（并不会做。）", "甲方永远是对的。你的甲方除外。"],
     },
   },
   soldi: {
@@ -179,8 +179,8 @@ const REPLIES: Record<string, Category> = {
     lines: {
       it: ["Pago in pesce.", "Sei al verde. Io al bianco e nero.", "Costa troppo. Anche tu."],
       en: ["I pay in fish.", "You're in the red. I'm in black and white.", "Too expensive. So are you."],
-      es: ["Pago en pescado.", "Tú en números rojos. Yo, en blanco y negro.", "Cuesta demasiado. Tú también."],
-      zh: ["我用鱼付款。", "你一贫如洗。我一身黑白。", "太贵了。你也是。"],
+      es: ["Pago en pescado.", "Estás tieso. Yo, en blanco y negro.", "Cuesta demasiado. Tú también."],
+      zh: ["我用鱼付款。扫码也行。", "你是月光族。我是黑白族。", "太贵了。你也是。"],
     },
   },
   amore: {
@@ -197,7 +197,7 @@ const REPLIES: Record<string, Category> = {
       it: ["Scrivile. Poi pentiti.", "L'ex? Freddo. Più di me.", "Single per scelta. Sua.", "Ghostala. Sei già bravo."],
       en: ["Text her. Then regret it.", "The ex? Cold. Colder than me.", "Single by choice. Theirs.", "Ghost them. You're a natural."],
       es: ["Escríbele. Luego arrepiéntete.", "¿Tu ex? Frío. Más que yo.", "Soltero por elección. Suya.", "Hazle ghosting. Se te da bien."],
-      zh: ["给她发消息。然后后悔。", "前任？很冷。比我还冷。", "单身是一种选择。别人的选择。", "玩消失吧。你本来就擅长。"],
+      zh: ["给她发“在吗”。然后后悔。", "前任？很冷。比我还冷。", "单身是一种选择。别人的选择。", "玩消失吧。你本来就擅长。"],
     },
   },
   cibo: {
@@ -213,8 +213,8 @@ const REPLIES: Record<string, Category> = {
     lines: {
       it: ["Pesce o niente.", "Arancina, non arancino. Detto questo: no.", "Mangia meno, scrivi meno.", "Sushi? Parente mio. Rispetto."],
       en: ["Fish or nothing.", "Pineapple on pizza? Get out.", "Eat less. Type less.", "Sushi? That's family. Respect."],
-      es: ["Pescado o nada.", "¿Piña en la pizza? Fuera.", "Come menos. Escribe menos.", "¿Sushi? Es familia. Respeto."],
-      zh: ["要么吃鱼，要么不吃。", "披萨加菠萝？出去。", "少吃点。少打字。", "寿司？那是我亲戚。尊重点。"],
+      es: ["Pescado o nada.", "¿Paella con chorizo? Fuera.", "Come menos. Escribe menos.", "¿Sushi? Es familia. Respeto."],
+      zh: ["要么吃鱼，要么不吃。", "豆腐脑吃甜的？出去。", "少吃点。少打字。", "寿司？那是我亲戚。尊重点。"],
     },
   },
   insulti: {
@@ -239,7 +239,7 @@ const REPLIES: Record<string, Category> = {
     match: rule(["grazie|thanks|thx|gentile", "thank you|ty|cheers", "gracias|amable"], "谢谢|多谢|感谢|谢了"),
     lines: {
       it: ["Prego. Ora vai.", "Lo so.", "Di niente. Davvero, niente."],
-      en: ["You're welcome. Now go.", "I know.", "It was nothing. Really, nothing."],
+      en: ["Cheers. Now go.", "I know.", "It was nothing. Really, nothing."],
       es: ["De nada. Ahora vete.", "Lo sé.", "De nada. De verdad, nada."],
       zh: ["不客气。现在走吧。", "我知道。", "不客气。真的，啥也没做。"],
     },
@@ -256,9 +256,9 @@ const REPLIES: Record<string, Category> = {
     ),
     lines: {
       it: ["Gelido. Come sempre.", "Stavo meglio prima.", "Bene. Fino a due secondi fa."],
-      en: ["Freezing. As always.", "I was better before.", "Fine. Until two seconds ago."],
-      es: ["Helado. Como siempre.", "Estaba mejor antes.", "Bien. Hasta hace dos segundos."],
-      zh: ["冰冷。一如既往。", "刚才还挺好的。", "挺好。直到两秒前。"],
+      en: ["Freezing. As always.", "Mustn't grumble. Will anyway.", "Fine. Until two seconds ago."],
+      es: ["Helado. Como siempre.", "Tirando. Hacia abajo.", "Bien. Hasta hace dos segundos."],
+      zh: ["冰冷。一如既往。", "还活着。勉强。", "挺好。直到两秒前。"],
     },
   },
   meteo: {
@@ -294,7 +294,7 @@ const QUESTION: Lines = {
   it: ["Sì. Cioè no.", "Chiedi a Google. Lui ha pazienza.", "Domanda di riserva?", "Dipende. Da me. Quindi no."],
   en: ["Yes. I mean no.", "Ask Google. It has patience.", "Got a backup question?", "Depends. On me. So no."],
   es: ["Sí. O sea, no.", "Pregúntale a Google. Él tiene paciencia.", "¿Tienes otra pregunta?", "Depende. De mí. Así que no."],
-  zh: ["是。不对，不是。", "问谷歌吧。它有耐心。", "能换个问题吗？", "看情况。看我。所以不行。"],
+  zh: ["是。不对，不是。", "问百度吧。它有耐心。", "能换个问题吗？", "看情况。看我。所以不行。"],
 };
 
 const FALLBACK: Lines = {
