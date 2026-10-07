@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { CaretDown, Check, Copy, DownloadSimple, GithubLogo, X } from "@phosphor-icons/react";
 import { PINGU_AUTO, PinguAvatar, syllableFor, type EngineState, type PinguHandle, type ShapeName } from "@/avatar";
 import NavRail, { useTheme, type RailItem } from "./NavRail";
-import Timeline from "./studio/Timeline";
+import Timeline, { type DropTarget, type TimelineHandle } from "./studio/Timeline";
+import { useTileDrag } from "./studio/useTileDrag";
 import MontageDialog, { type MontageBackground, type MontageFormat } from "./studio/MontageDialog";
 import {
   copyPng,
@@ -97,6 +98,9 @@ export default function PinguStudio() {
   const [playing, setPlaying] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [dialog, setDialog] = useState(false);
+  const timeline = useRef<TimelineHandle>(null);
+  /** A catalogue tile being dragged onto the timeline: the animation, where the finger is, where it would land. */
+  const [lift, setLift] = useState<{ anim: AnimId; x: number; y: number; target: DropTarget | null } | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const recording = useRef(false);
 
@@ -161,12 +165,33 @@ export default function PinguStudio() {
     if (activeKey && activeAction) pingu.current?.[activeAction]();
   }, [activeKey, activeAction]);
 
-  const addClip = (anim: AnimId) => {
+  /** Adds a 2 s clip at `index` (the end by default), selects it and moves the playhead onto it. */
+  const addClip = (anim: AnimId, index = clips.length) => {
     const clip = makeClip(anim, 2);
-    setClips((c) => [...c, clip]);
+    setClips((c) => [...c.slice(0, index), clip, ...c.slice(index)]);
     setSelected(clip.key);
-    setTime(total + 0.001);
+    setTime((index < clips.length ? clipStarts(clips)[index] : total) + 0.001);
   };
+
+  const dropTile = (anim: AnimId, target: DropTarget) => {
+    play("tap");
+    if (target.kind === "insert") return addClip(anim, target.index);
+    // Replacing keeps the clip's length and place.
+    setClips((c) => c.map((x) => (x.key === target.key ? { ...x, anim } : x)));
+    setSelected(target.key);
+    const i = clips.findIndex((c) => c.key === target.key);
+    if (i >= 0) setTime(clipStarts(clips)[i] + 0.001);
+  };
+
+  // Catalogue tiles can be dragged onto the timeline: onto a clip to replace it, between clips to insert.
+  const tileDrag = useTileDrag<AnimId>({
+    onMove: (anim, x, y) => setLift({ anim, x, y, target: timeline.current?.aim(x, y) ?? null }),
+    onDrop: (anim, x, y) => {
+      const target = timeline.current?.aim(x, y);
+      if (target) dropTile(anim, target);
+    },
+    onEnd: () => setLift(null),
+  });
 
   const move = (key: string, index: number) =>
     setClips((list) => {
@@ -395,6 +420,8 @@ export default function PinguStudio() {
             <div className="flex w-full justify-center md:absolute md:inset-x-0 md:bottom-10 md:pl-28 md:pr-6">
               <div className="w-full max-w-[1100px]">
                 <Timeline
+                  ref={timeline}
+                  hint={lift?.target}
                   clips={clips}
                   time={Math.min(time, Math.max(0, total - 0.001))}
                   playing={playing}
@@ -567,7 +594,13 @@ export default function PinguStudio() {
               <Section title={t("studio.animation")}>
                 <div className="grid grid-cols-4 gap-1">
                   {ANIMATIONS.map((a) => (
-                    <Tile key={a.id} active={activeAnim?.id === a.id} label={t(a.label)} onClick={() => addClip(a.id)}>
+                    <Tile
+                      key={a.id}
+                      active={activeAnim?.id === a.id}
+                      label={t(a.label)}
+                      onClick={() => !tileDrag.justDropped() && addClip(a.id)}
+                      onPointerDown={(e) => tileDrag.start(e, a.id)}
+                    >
                       <PinguAvatar size={46} shape={a.shape ?? shape} color={color} state={a.state} animated={false} className={outline} />
                     </Tile>
                   ))}
@@ -578,7 +611,7 @@ export default function PinguStudio() {
                   <input
                     value={line ?? t("studio.talkLine")}
                     onChange={(e) => setLine(e.target.value)}
-                    className="min-w-0 flex-1 rounded-xl border border-st-line bg-st-surface px-3 py-2 text-[14px] text-st-ink focus:border-st-line-strong focus:outline-none"
+                    className="min-w-0 flex-1 rounded-xl border border-st-line bg-st-surface px-3 py-2 text-[16px] text-st-ink focus:border-st-line-strong md:text-[14px] focus:outline-none"
                   />
                   <Pill onClick={talk}>{t("studio.talkButton")}</Pill>
                 </div>
@@ -676,6 +709,23 @@ export default function PinguStudio() {
           onDownload={exportMontage}
         />
       )}
+
+      {/* The tile being dragged onto the timeline, held just above the finger so it stays visible. */}
+      {lift && (
+        <div
+          className="pointer-events-none fixed z-50 grid size-16 -translate-x-1/2 -translate-y-full place-items-center rounded-2xl bg-st-raised shadow-[var(--st-shadow)]"
+          style={{ left: lift.x, top: lift.y - 12 }}
+        >
+          <PinguAvatar
+            size={46}
+            shape={getAnimation(lift.anim).shape ?? shape}
+            color={color}
+            state={getAnimation(lift.anim).state}
+            animated={false}
+            className={outline}
+          />
+        </div>
+      )}
     </main>
   );
 }
@@ -692,14 +742,29 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Tile({ active, label, onClick, children }: { active: boolean; label: string; onClick: () => void; children: React.ReactNode }) {
+function Tile({
+  active,
+  label,
+  onClick,
+  onPointerDown,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  /** Return false to skip the tap sound (the click was swallowed). */
+  onClick: () => unknown;
+  onPointerDown?: (e: React.PointerEvent<HTMLButtonElement>) => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       onClick={() => {
-        play("tap");
-        onClick();
+        if (onClick() !== false) play("tap");
       }}
-      className={`flex flex-col items-center gap-1.5 rounded-[14px] border-2 px-1 pb-2 pt-3 transition ${
+      onPointerDown={onPointerDown}
+      // A long press would otherwise select the label or open the callout instead of lifting the tile.
+      onContextMenu={(e) => e.preventDefault()}
+      className={`flex touch-manipulation select-none flex-col items-center gap-1.5 rounded-[14px] border-2 px-1 pb-2 pt-3 transition [-webkit-touch-callout:none] ${
         active ? "border-st-selected" : "border-transparent hover:bg-st-hover"
       }`}
       aria-pressed={active}

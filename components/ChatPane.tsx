@@ -97,10 +97,10 @@ export default function ChatPane({
   return (
     <section className={`relative min-w-0 flex-1 flex-col bg-gb-main ${className}`}>
       {/* Header */}
-      <header className="flex h-[44px] shrink-0 items-center gap-1 border-b border-gb-divider px-4">
+      <header className="flex h-[52px] shrink-0 items-center gap-1 border-b border-gb-divider px-4 md:h-[44px]">
         <button
           onClick={onBack}
-          className="-ml-1 mr-1 rounded-md p-1 text-gb-text-2 hover:bg-gb-hover md:hidden"
+          className="-ml-3 grid size-11 shrink-0 place-items-center rounded-md text-gb-text-2 hover:bg-gb-hover md:hidden"
           aria-label={t("chat.back")}
         >
           <CaretLeft size={18} />
@@ -129,7 +129,7 @@ export default function ChatPane({
               if (!sound) noot();
               onToggleSound();
             }}
-            className={`grid size-6 place-items-center rounded-[6px] transition hover:bg-gb-hover ${sound ? "text-gb-text" : "text-gb-text-2"}`}
+            className={`-mr-2.5 grid size-11 place-items-center rounded-[6px] transition hover:bg-gb-hover md:mr-0 md:size-6 ${sound ? "text-gb-text" : "text-gb-text-2"}`}
             aria-label={sound ? t("chat.soundOff") : t("chat.soundOn")}
             aria-pressed={sound}
           >
@@ -417,7 +417,7 @@ function Composer({
   return (
     <form
       onSubmit={submit}
-      className="relative flex h-[45px] items-center gap-2 rounded-full border-[0.5px] border-gb-border bg-gb-composer p-2"
+      className="relative flex h-[52px] items-center gap-2 rounded-full md:h-[45px] border-[0.5px] border-gb-border bg-gb-composer p-2"
     >
       <button
         type="button"
@@ -426,7 +426,7 @@ function Composer({
           onTyping(true);
           inputRef.current?.focus();
         }}
-        className="grid size-7 shrink-0 place-items-center rounded-full bg-gb-fill text-gb-text-2 transition hover:text-gb-text"
+        className="grid size-9 shrink-0 place-items-center rounded-full bg-gb-fill md:size-7 text-gb-text-2 transition hover:text-gb-text"
         aria-label={t("chat.suggest")}
         title={t("chat.suggest")}
       >
@@ -441,14 +441,14 @@ function Composer({
           onKey();
         }}
         placeholder={deaf ? t("chat.deaf", { name }) : t("chat.placeholder", { name })}
-        className="min-w-0 flex-1 bg-transparent py-0.5 text-[14px] leading-5 text-gb-text placeholder:text-gb-text-3 focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent py-0.5 text-[16px] leading-5 md:text-[14px] text-gb-text placeholder:text-gb-text-3 focus:outline-none"
         aria-label={t("chat.placeholder", { name })}
       />
       {text.trim() ? (
         <button
           type="submit"
           disabled={busy}
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-gb-emphasis text-gb-user-ink transition hover:bg-gb-emphasis-hover disabled:opacity-40"
+          className="grid size-9 shrink-0 place-items-center rounded-full bg-gb-emphasis text-gb-user-ink transition hover:bg-gb-emphasis-hover disabled:opacity-40 md:size-7"
           aria-label={t("chat.send")}
         >
           <ArrowUp size={14} weight="bold" />
@@ -457,7 +457,7 @@ function Composer({
         <button
           type="button"
           onClick={micJoke}
-          className={`grid size-7 shrink-0 place-items-center rounded-full bg-gb-emphasis text-gb-user-ink transition hover:bg-gb-emphasis-hover ${deaf ? "wiggle" : ""}`}
+          className={`grid size-9 shrink-0 place-items-center rounded-full bg-gb-emphasis md:size-7 text-gb-user-ink transition hover:bg-gb-emphasis-hover ${deaf ? "wiggle" : ""}`}
           aria-label={t("chat.mic")}
         >
           <Microphone size={14} weight="fill" />

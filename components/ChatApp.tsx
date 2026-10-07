@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { addTransitionType, startTransition, useEffect, useState, ViewTransition } from "react";
 import { GithubLogo, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { AGENTS, getAgent } from "@/lib/agents";
 import { shortTime } from "@/lib/time";
@@ -28,12 +28,22 @@ export default function ChatApp() {
   /** The pointer is over the chat list: every avatar in it stops fidgeting and watches it. */
   const [overList, setOverList] = useState(false);
 
-  const open = (id: string) => {
-    setActiveId(id);
-    setListening(false);
-    chat.setActive(id);
-    setMobileView("chat");
+  /** On phones the list and the chat are two screens: moving between them slides (see .chat-push in globals.css). */
+  const slide = (type: "chat-push" | "chat-pop", update: () => void) => {
+    if (!window.matchMedia("(max-width: 767px)").matches) return update();
+    startTransition(() => {
+      addTransitionType(type);
+      update();
+    });
   };
+
+  const open = (id: string) =>
+    slide("chat-push", () => {
+      setActiveId(id);
+      setListening(false);
+      chat.setActive(id);
+      setMobileView("chat");
+    });
 
   const agents = AGENTS.filter((a) => a.copy[lang].name.toLowerCase().includes(query.trim().toLowerCase()));
 
@@ -54,92 +64,94 @@ export default function ChatApp() {
           tooltipClassName="left-1/2 top-[calc(100%+8px)] -translate-x-1/2 min-[1180px]:left-[calc(100%+12px)] min-[1180px]:top-1/2 min-[1180px]:translate-x-0 min-[1180px]:-translate-y-1/2"
         />
       </div>
-      <div className="flex h-[calc(100dvh-164px)] w-full overflow-hidden bg-gb-main md:h-[660px] md:max-h-[calc(100dvh-176px)] md:w-[976px] md:rounded-[24px] md:ring-1 md:ring-gb-ring min-[1180px]:max-h-[calc(100dvh-92px)]">
-        {/* Sidebar */}
-        <aside
-          className={`${mobileView === "list" ? "flex" : "hidden"} w-full flex-col bg-gb-sidebar md:flex md:w-[280px] md:shrink-0 md:border-r md:border-gb-divider`}
-        >
-          <div className="flex h-[44px] shrink-0 items-center justify-between pl-4 pr-[10px]">
-            <div className="flex w-[52px] gap-2" aria-hidden>
-              <span className="size-3 rounded-full bg-[#ff5f57]" />
-              <span className="size-3 rounded-full bg-[#febc2e]" />
-              <span className="size-3 rounded-full bg-[#28c840]" />
-            </div>
-            <div className="group relative">
-              <button
-                onClick={() => chat.reset(activeId)}
-                className="grid size-6 place-items-center rounded-[6px] text-gb-side-2 transition hover:bg-gb-hover hover:text-gb-side-1"
-                aria-label={t("chat.newChat")}
-              >
-                <Plus size={16} />
-              </button>
-              {/* Below the button and right-aligned, so it stays inside the sidebar. */}
-              <Tooltip label={t("chat.newChat")} tone="chat" className="right-0 top-[calc(100%+6px)]" />
-            </div>
-          </div>
-
-          <div className="pl-4 pr-[10px]">
-            <label className="flex h-8 items-center gap-2 rounded-[10px] border-[0.5px] border-gb-search-border bg-gb-search px-[10px] text-gb-side-3">
-              <MagnifyingGlass size={15} />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t("chat.search")}
-                className="w-full bg-transparent text-[13px] leading-[18px] text-gb-side-1 placeholder:text-gb-side-3 focus:outline-none"
-              />
-            </label>
-          </div>
-
-          <nav
-            onPointerEnter={() => setOverList(true)}
-            onPointerLeave={() => setOverList(false)}
-            className="no-scrollbar mt-2 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto pb-2 pl-4 pr-[10px]"
+      <ViewTransition update={{ "chat-push": "chat-push", "chat-pop": "chat-pop", default: "none" }}>
+        <div className="flex h-[calc(100dvh-164px)] w-full overflow-hidden bg-gb-main md:h-[660px] md:max-h-[calc(100dvh-176px)] md:w-[976px] md:rounded-[24px] md:ring-1 md:ring-gb-ring min-[1180px]:max-h-[calc(100dvh-92px)]">
+          {/* Sidebar */}
+          <aside
+            className={`${mobileView === "list" ? "flex" : "hidden"} w-full flex-col bg-gb-sidebar md:flex md:w-[280px] md:shrink-0 md:border-r md:border-gb-divider`}
           >
-            {agents.map((agent) => (
-              <SidebarItem
-                key={agent.id}
-                agentId={agent.id}
-                active={agent.id === activeId}
-                watching={overList}
-                messages={chat.threads[agent.id]}
-                status={chat.status[agent.id] ?? "idle"}
-                listening={listening && agent.id === activeId}
-                flourish={chat.flourish[agent.id]?.state}
-                unread={!!chat.unread[agent.id]}
-                onClick={() => {
-                  if (agent.id !== activeId) play("tap");
-                  open(agent.id);
-                }}
-              />
-            ))}
-            {agents.length === 0 && (
-              <p className="px-2 py-6 text-center text-[13px] text-gb-side-2">{t("chat.noResults")}</p>
-            )}
-          </nav>
+            <div className="flex h-[44px] shrink-0 items-center justify-between pl-4 pr-[10px]">
+              <div className="flex w-[52px] gap-2" aria-hidden>
+                <span className="size-3 rounded-full bg-[#ff5f57]" />
+                <span className="size-3 rounded-full bg-[#febc2e]" />
+                <span className="size-3 rounded-full bg-[#28c840]" />
+              </div>
+              <div className="group relative">
+                <button
+                  onClick={() => chat.reset(activeId)}
+                  className="grid size-9 place-items-center rounded-[6px] text-gb-side-2 md:size-6 transition hover:bg-gb-hover hover:text-gb-side-1"
+                  aria-label={t("chat.newChat")}
+                >
+                  <Plus size={16} />
+                </button>
+                {/* Below the button and right-aligned, so it stays inside the sidebar. */}
+                <Tooltip label={t("chat.newChat")} tone="chat" className="right-0 top-[calc(100%+6px)]" />
+              </div>
+            </div>
 
-          <div className="flex h-[50px] shrink-0 items-center gap-2 px-[14px] pb-[14px] pt-2">
-            <Image src="/gabriel.jpg" alt="" width={28} height={28} className="size-7 rounded-full object-cover" />
-            <span className="text-[13px] leading-[18px] text-gb-side-1">Gabriel</span>
-          </div>
-        </aside>
+            <div className="pl-4 pr-[10px]">
+              <label className="flex h-10 items-center gap-2 rounded-[10px] md:h-8 border-[0.5px] border-gb-search-border bg-gb-search px-[10px] text-gb-side-3">
+                <MagnifyingGlass size={15} />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t("chat.search")}
+                  className="w-full bg-transparent text-[16px] leading-[18px] text-gb-side-1 md:text-[13px] placeholder:text-gb-side-3 focus:outline-none"
+                />
+              </label>
+            </div>
 
-        {/* Chat */}
-        <ChatPane
-          key={activeId}
-          className={`${mobileView === "chat" ? "flex" : "hidden"} md:flex`}
-          agentId={activeId}
-          messages={chat.threads[activeId]}
-          status={chat.status[activeId] ?? "idle"}
-          flourish={chat.flourish[activeId]?.state}
-          sound={chat.sound}
-          onListening={setListening}
-          onReact={(state, ms) => chat.react(activeId, state, ms)}
-          onToggleSound={() => chat.setSound((s) => !s)}
-          onSend={(text) => chat.send(activeId, text)}
-          onTyped={(msgId) => chat.finishTyping(activeId, msgId)}
-          onBack={() => setMobileView("list")}
-        />
-      </div>
+            <nav
+              onPointerEnter={() => setOverList(true)}
+              onPointerLeave={() => setOverList(false)}
+              className="no-scrollbar mt-2 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto pb-2 pl-4 pr-[10px]"
+            >
+              {agents.map((agent) => (
+                <SidebarItem
+                  key={agent.id}
+                  agentId={agent.id}
+                  active={agent.id === activeId}
+                  watching={overList}
+                  messages={chat.threads[agent.id]}
+                  status={chat.status[agent.id] ?? "idle"}
+                  listening={listening && agent.id === activeId}
+                  flourish={chat.flourish[agent.id]?.state}
+                  unread={!!chat.unread[agent.id]}
+                  onClick={() => {
+                    if (agent.id !== activeId) play("tap");
+                    open(agent.id);
+                  }}
+                />
+              ))}
+              {agents.length === 0 && (
+                <p className="px-2 py-6 text-center text-[13px] text-gb-side-2">{t("chat.noResults")}</p>
+              )}
+            </nav>
+
+            <div className="flex h-[50px] shrink-0 items-center gap-2 px-[14px] pb-[14px] pt-2">
+              <Image src="/gabriel.jpg" alt="" width={28} height={28} className="size-7 rounded-full object-cover" />
+              <span className="text-[13px] leading-[18px] text-gb-side-1">Gabriel</span>
+            </div>
+          </aside>
+
+          {/* Chat */}
+          <ChatPane
+            key={activeId}
+            className={`${mobileView === "chat" ? "flex" : "hidden"} md:flex`}
+            agentId={activeId}
+            messages={chat.threads[activeId]}
+            status={chat.status[activeId] ?? "idle"}
+            flourish={chat.flourish[activeId]?.state}
+            sound={chat.sound}
+            onListening={setListening}
+            onReact={(state, ms) => chat.react(activeId, state, ms)}
+            onToggleSound={() => chat.setSound((s) => !s)}
+            onSend={(text) => chat.send(activeId, text)}
+            onTyped={(msgId) => chat.finishTyping(activeId, msgId)}
+            onBack={() => slide("chat-pop", () => setMobileView("list"))}
+          />
+        </div>
+      </ViewTransition>
 
       {/* Footer links: no underline, they fade on hover instead. */}
       <a

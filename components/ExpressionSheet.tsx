@@ -157,7 +157,7 @@ function Playground() {
           <input
             value={line}
             onChange={(e) => setLine(e.target.value)}
-            className="w-full rounded-[10px] bg-gb-search px-3 py-2 text-gb-text focus:outline-none"
+            className="w-full rounded-[10px] bg-gb-search px-3 py-2 text-[16px] text-gb-text focus:outline-none md:text-[13px]"
           />
           <Chip onClick={speak}>Parla</Chip>
         </Group>

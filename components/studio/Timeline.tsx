@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type PointerEvent, type Ref } from "react";
 import { CaretDown, DownloadSimple, Minus, Pause, Play, Plus, X } from "@phosphor-icons/react";
 import { PinguAvatar, type ShapeName } from "@/avatar";
 import { useI18n } from "@/lib/i18n";
@@ -9,16 +9,24 @@ import { clipStarts, getAnimation, MAX_DUR, MIN_DUR, type Clip } from "@/lib/mon
 /* Grok Bot's montage strip: preset picker, transport, ruler, clips sized by duration. */
 
 const PX = 56; // pixels per second
-/** Touch picks a clip up after a still press, so a quick swipe still scrolls the strip. */
-const LONG_PRESS_MS = 280;
+/** Touch picks a clip (or a catalogue tile) up after a still press, so a quick swipe still scrolls. */
+export const LONG_PRESS_MS = 280;
 /** Strip edge band (px) where a dragged clip scrolls it. */
 const EDGE = 40;
 
 /** A press on a clip: becomes a drag once the mouse moves, or once a finger has held still. */
 type Press = { key: string; id: number; x0: number; y0: number; scroll0: number; touch: boolean; active: boolean; timer?: number };
+/** Where an animation dragged in from the catalogue would land: on a clip (replacing it) or between clips. */
+export type DropTarget = { kind: "replace"; key: string } | { kind: "insert"; index: number };
+export type TimelineHandle = {
+  /** Drop target under a pointer at (x, y) in client px, or null outside the strip; scrolls the strip near its edges. */
+  aim: (x: number, y: number) => DropTarget | null;
+};
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 export default function Timeline({
+  ref,
+  hint,
   clips,
   time,
   playing,
@@ -35,6 +43,9 @@ export default function Timeline({
   onPreset,
   onExport,
 }: {
+  ref?: Ref<TimelineHandle>;
+  /** The drop target of an animation being dragged in from the catalogue. */
+  hint?: DropTarget | null;
   clips: Clip[];
   time: number;
   playing: boolean;
@@ -87,6 +98,28 @@ export default function Timeline({
   /** Slot among the other clips for a pointer at `x` (track px): after every clip whose middle it passed. */
   const slotAt = (key: string, x: number) =>
     clips.filter((c, i) => c.key !== key && (starts[i] + c.dur / 2) * PX < x).length;
+
+  useImperativeHandle(ref, () => ({
+    aim(x, y) {
+      const sc = scroller.current;
+      if (!sc) return null;
+      const box = sc.getBoundingClientRect();
+      // A little slack above and below: the strip is short and a finger hides it.
+      if (x < box.left || x > box.right || y < box.top - 24 || y > box.bottom + 24) return null;
+      if (x < box.left + EDGE) sc.scrollLeft -= 10;
+      else if (x > box.right - EDGE) sc.scrollLeft += 10;
+      const tr = track.current;
+      if (!tr || !clips.length) return { kind: "insert", index: 0 };
+      const at = (x - tr.getBoundingClientRect().left) / PX;
+      const i = clips.findIndex((c, j) => at < starts[j] + c.dur);
+      if (i < 0) return { kind: "insert", index: clips.length };
+      // The middle of a clip replaces it; its outer fifths insert before or after it.
+      const f = (at - starts[i]) / clips[i].dur;
+      if (f < 0.2) return { kind: "insert", index: i };
+      if (f > 0.8) return { kind: "insert", index: i + 1 };
+      return { kind: "replace", key: clips[i].key };
+    },
+  }));
 
   const endPress = () => {
     window.clearTimeout(press.current?.timer);
@@ -155,7 +188,9 @@ export default function Timeline({
       ? drag.slot < others.length
         ? starts[others[drag.slot].i] * PX
         : (starts[others.at(-1)!.i] + others.at(-1)!.c.dur) * PX
-      : null;
+      : hint?.kind === "insert"
+        ? (hint.index < clips.length ? starts[hint.index] : total) * PX
+        : null;
 
   const seekFromPointer = (clientX: number) => {
     const el = track.current;
@@ -165,7 +200,8 @@ export default function Timeline({
   };
 
   return (
-    <div className="w-full">
+    // No text selection or callout: a long press on the strip picks clips up instead.
+    <div className="w-full select-none [-webkit-touch-callout:none]">
       <div className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:mb-4 sm:gap-3">
         <label className="relative min-w-0 justify-self-start">
           <select
@@ -235,6 +271,7 @@ export default function Timeline({
                 const anim = getAnimation(c.anim);
                 const active = c.key === selected;
                 const lifted = drag?.key === c.key;
+                const replacing = hint?.kind === "replace" && hint.key === c.key;
                 return (
                   <div
                     key={c.key}
@@ -257,7 +294,7 @@ export default function Timeline({
                   >
                     <div
                       className={`flex h-[84px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border-2 transition ${
-                        lifted
+                        lifted || replacing
                           ? "scale-105 border-st-selected bg-st-raised shadow-[var(--st-shadow)]"
                           : active
                             ? "border-st-selected bg-st-surface"
@@ -272,7 +309,7 @@ export default function Timeline({
                               e.stopPropagation();
                               onResize(c.key, Math.max(MIN_DUR, +(c.dur - 0.2).toFixed(1)));
                             }}
-                            className="grid size-4 place-items-center rounded-full hover:bg-st-hover hover:text-st-ink"
+                            className="relative grid size-4 place-items-center rounded-full before:absolute before:-inset-2 hover:bg-st-hover hover:text-st-ink"
                             aria-label={t("montage.shorter")}
                           >
                             <Minus size={10} weight="bold" />
@@ -285,7 +322,7 @@ export default function Timeline({
                               e.stopPropagation();
                               onResize(c.key, Math.min(MAX_DUR, +(c.dur + 0.2).toFixed(1)));
                             }}
-                            className="grid size-4 place-items-center rounded-full hover:bg-st-hover hover:text-st-ink"
+                            className="relative grid size-4 place-items-center rounded-full before:absolute before:-inset-2 hover:bg-st-hover hover:text-st-ink"
                             aria-label={t("montage.longer")}
                           >
                             <Plus size={10} weight="bold" />
@@ -339,7 +376,7 @@ export default function Timeline({
                         onRemove(c.key);
                       }}
                       // Also shown on the selected clip: touch screens have no hover to reveal it.
-                      className={`absolute -top-1.5 right-0 size-5 place-items-center rounded-full bg-st-surface text-[12px] text-st-muted shadow-[var(--st-shadow)] hover:text-st-ink group-hover:grid ${
+                      className={`absolute -top-1.5 right-0 size-5 place-items-center rounded-full before:absolute before:-inset-2 bg-st-surface text-[12px] text-st-muted shadow-[var(--st-shadow)] hover:text-st-ink group-hover:grid ${
                         active ? "grid" : "hidden"
                       }`}
                       aria-label={t("montage.remove")}
