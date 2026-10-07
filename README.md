@@ -2,7 +2,7 @@
 
 <img src="docs/hero.gif" alt="Pingu changing shape, colour and expression" width="320" />
 
-# Pingu avatar
+# Pingu Avatar
 
 **An animated penguin avatar for React.** Noot noot.
 
