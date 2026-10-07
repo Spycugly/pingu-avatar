@@ -16,58 +16,18 @@ Drop it into a React project and give your assistant a face that listens, thinks
 
 ---
 
-## What's inside
+## Use it in your project
 
-- **A reusable avatar** in [`avatar/`](avatar/): one inline SVG driven by a small spring engine.
-  Every avatar on the page shares one `requestAnimationFrame`, off-screen ones pause, and
-  `prefers-reduced-motion` gets a still frame. No dependencies besides React.
-- **A studio** to pick shape, expression and colour, stitch expressions into a montage on a
-  timeline, and export the result as PNG, SVG, animated SVG, GIF or MP4.
+### 1. Add it
 
-Everything runs in the browser, and the studio speaks English, Italian, Spanish and Chinese.
+Copy the [`avatar/`](avatar/) folder into your project, for example to `src/components/avatar/`.
+There is no package to install and no dependency besides React (18 or 19, with TypeScript), and
+the code is yours to change. It works as is in the Next.js App Router, Vite and the like.
 
-## Tour
+Import `avatar/pingu-avatar.css` once if you want the default colour to follow your theme: a
+black Pingu on light pages, a white one on dark pages.
 
-The studio is one page with three tabs on the floating rail (Customise, Animation, Settings),
-plus a reference sheet. On phones the rail becomes a tab bar at the bottom of the screen. Every
-page has a light and a dark theme, or follows the system; the screenshots are in dark mode.
-
-### Customise · [`/`](https://pingu-avatar.vercel.app)
-
-Pick a body shape, an expression and a colour, and watch Pingu morph between them. Below the
-colours you choose the theme: light, dark or system. The export button downloads or copies the
-result as PNG, SVG, animated SVG or GIF.
-
-![The Customise tab](docs/studio.png)
-
-### Animation · [`/?tab=motion`](https://pingu-avatar.vercel.app/?tab=motion)
-
-Click animations (wink, orbit, noot!, laugh…) to line them up on a timeline, or drag them onto
-it: onto a clip to replace it, between two clips to insert. Drag a clip's edge to change its
-length, and play the montage back. **Export** records it as an MP4 (white background) or
-a GIF (white or transparent). You can also type a line and make Pingu say it, with
-lip-sync.
-
-![The Animation tab](docs/animation.png)
-
-### Settings · [`/?tab=settings`](https://pingu-avatar.vercel.app/?tab=settings)
-
-Interface language, interface sounds, a pose you can lock (turn, tilt, roll), whether Pingu
-follows the cursor or dozes off when ignored, and a transparent background for exports.
-
-![The Settings tab](docs/settings.png)
-
-### Expressions · [`/espressioni`](https://pingu-avatar.vercel.app/espressioni)
-
-The 16 poses of the original reference sheet as still frames (in Italian): handy to check the
-faces side by side while working on the engine.
-
-![The expression sheet](docs/expressions.png)
-
-## Use the avatar in your project
-
-Copy the [`avatar/`](avatar/) folder into your React project and import from it. There is no
-package to install, and the code is yours to change.
+### 2. Show it
 
 ```tsx
 import { PinguAvatar } from "./avatar";
@@ -76,69 +36,81 @@ import { PinguAvatar } from "./avatar";
 <PinguAvatar size={80} shape="egg" color="#3b8be8" state="curious" />
 ```
 
-Wire the state to your assistant: `listening` while the user types, `thinking` while the
-model works, `talking` while the answer streams in, then back to `idle`.
+Ten shapes (`mochi`, `egg`, `squircle`, `hex`, `heart`, `cloud`…) and any hex colour; changing
+either morphs smoothly.
+
+### 3. Connect it to your assistant
+
+Map what your assistant is doing to a state:
+
+| Your assistant | `state` |
+|---|---|
+| waiting | `idle` |
+| the user is typing | `listening` |
+| the model is working | `thinking` (or `searching`, `working`) |
+| the answer is streaming in | `talking` |
+| done, or something went wrong | `happy`, `proud`, `confused`, `sad`… |
 
 ```tsx
-<PinguAvatar size={64} state={busy ? "thinking" : streaming ? "talking" : "idle"} />
+import { PinguAvatar, type PinguState } from "./avatar";
+
+type Status = "idle" | "typing" | "thinking" | "streaming";
+const FACE: Record<Status, PinguState> = {
+  idle: "idle",
+  typing: "listening",
+  thinking: "thinking",
+  streaming: "talking",
+};
+
+<PinguAvatar agentId="assistant" size={48} state={FACE[status]} />
 ```
 
-Want a spin? Grab a ref:
+### 4. Lip-sync and reactions
 
-```tsx
-const pingu = useRef<PinguHandle>(null);
+Give the avatar an `agentId` and send it events from anywhere, without passing refs around. For
+lip-sync, send one syllable per character as your typewriter prints the answer:
 
-<PinguAvatar ref={pingu} size={160} onClick={() => pingu.current?.spinBounce()} />
+```ts
+import { emitPingu, syllableFor } from "./avatar";
+
+const open = syllableFor(ch); // null for characters that don't move the beak
+if (open !== null) emitPingu("assistant", { type: "syllable", open });
+
+emitPingu("assistant", { type: "keystroke" }); // a small nod while the user types
+emitPingu("assistant", { type: "action", name: "spinBounce" }); // or burst, nod, shake, sigh…
 ```
 
-The default colour follows the theme: a black Pingu with white eyes on light pages, a white
-one with dark eyes on dark pages. [`avatar/README.md`](avatar/README.md) covers every prop,
-state and shape, theming with CSS variables, the event bus and the optional exports.
+### 5. Go further
 
-## Run the site
+[`avatar/README.md`](avatar/README.md) has every prop (pose, auto-doze, still frames, unread
+badge…), all 36 states, theming with CSS variables, and the optional PNG, SVG, GIF and MP4 exports.
+Avatars off screen pause, and `prefers-reduced-motion` gets a still frame.
 
-```bash
-npm install
-npm run dev        # http://localhost:3000
-```
+## The studio
 
-| Command | |
-|---|---|
-| `npm run dev` | Development server |
-| `npm run build` / `npm start` | Production build and server |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript |
+Try the avatar in the [live demo](https://pingu-avatar.vercel.app), in English, Italian, Spanish
+or Chinese, light or dark. Everything runs in the browser.
 
-| Page | |
-|---|---|
-| `/` | Studio, Customise tab |
-| `/?tab=motion` | Studio, Animation tab (montage editor) |
-| `/?tab=settings` | Studio, Settings tab |
-| `/espressioni` | Reference sheet of the 16 poses |
-
-## Structure
-
-```
-avatar/        the reusable avatar (copy this folder)
-  engine/      spring engine: states, shapes, faces, effects, the shared animation loop
-  export/      optional PNG / SVG / GIF / MP4 export
-app/           Next.js routes and global styles
-components/    studio and shared UI
-lib/           i18n, montage catalogue, sounds
-```
-
-Built with Next.js 16, React 19, Tailwind CSS 4 and [Phosphor icons](https://phosphoricons.com).
-Notes for contributors (and coding agents) are in [`CLAUDE.md`](CLAUDE.md).
+<table>
+  <tr>
+    <td width="50%"><a href="https://pingu-avatar.vercel.app"><img src="docs/studio.png" alt="The Customise tab" /></a><br /><b>Customise</b>: shape, expression, colour and theme; export as PNG, SVG or GIF.</td>
+    <td width="50%"><a href="https://pingu-avatar.vercel.app/?tab=motion"><img src="docs/animation.png" alt="The Animation tab" /></a><br /><b>Animation</b>: line up animations on a timeline and export the montage as MP4 or GIF.</td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="https://pingu-avatar.vercel.app/?tab=settings"><img src="docs/settings.png" alt="The Settings tab" /></a><br /><b>Settings</b>: language, sounds, a locked pose, cursor following, transparent exports.</td>
+    <td width="50%"><a href="https://pingu-avatar.vercel.app/espressioni"><img src="docs/expressions.png" alt="The expression sheet" /></a><br /><b>Expressions</b>: the 16 poses of the original reference sheet, side by side.</td>
+  </tr>
+</table>
 
 ## Credits
 
-Made by Gabriel Spicuglia. If you use the avatar, a ⭐ on this repo or a line to say hello is
-appreciated.
+Made by Gabriel Spicuglia. If you use the avatar, a ⭐ on this repo is appreciated. Notes for
+contributors (and coding agents) are in [`CLAUDE.md`](CLAUDE.md).
 
-This is a non-commercial exploration project. The avatar's design and animations are based on
-xAI's Grok Bot (x.ai/bot); all rights to the original design belong to
-their owners, with the utmost respect for their work. "Pingu" is a trademark of its respective
-owners. This project is not affiliated with, or endorsed by, xAI or the owners of Pingu.
+A non-commercial exploration project. The avatar's design and animations are based on xAI's
+Grok Bot (x.ai/bot), and all rights to the original design belong to their owners. "Pingu" is a
+trademark of its respective owners. This project is not affiliated with, or endorsed by, xAI or
+the owners of Pingu.
 
 ## Licence
 
