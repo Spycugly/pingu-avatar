@@ -4,7 +4,7 @@ An animated penguin avatar for React: 36 expressions, 10 body shapes, any colour
 spins and confetti. It renders as one inline SVG driven by a small spring engine (one shared
 `requestAnimationFrame` for every avatar on the page). No dependencies besides React.
 
-It is distributed the shadcn way: **copy this folder into your project** and import from it.
+To use it, **copy this folder into your project** and import from it.
 You own the code and can change anything.
 
 ## Install

@@ -1,16 +1,16 @@
 <div align="center">
 
-<img src="docs/hero.gif" alt="Pingu changing shape, colour and expression" width="320" />
+https://github.com/user-attachments/assets/b92165bb-3d39-44a0-a4a5-55df158d856a
 
 # Pingu Avatar
 
-**An animated penguin avatar for React.** Noot noot.
+**An animated avatar for your AI assistant**, inspired by xAI's Grok Bot. Noot noot.
+
+Drop it into a React project and give your assistant a face that listens, thinks, talks and reacts.
 
 36 expressions · 10 body shapes · any colour · lip-sync · spins and confetti · PNG, SVG, GIF and MP4 export
 
-[**Live demo**](https://pingu-avatar.vercel.app) · [Avatar docs](avatar/README.md) · [Demo chat](https://pingu-avatar.vercel.app/chat)
-
-https://github.com/user-attachments/assets/b92165bb-3d39-44a0-a4a5-55df158d856a
+[**Live demo**](https://pingu-avatar.vercel.app) · [Avatar docs](avatar/README.md)
 
 </div>
 
@@ -23,25 +23,14 @@ https://github.com/user-attachments/assets/b92165bb-3d39-44a0-a4a5-55df158d856a
   `prefers-reduced-motion` gets a still frame. No dependencies besides React.
 - **A studio** to pick shape, expression and colour, stitch expressions into a montage on a
   timeline, and export the result as PNG, SVG, animated SVG, GIF or MP4.
-- **A demo chat** where penguin personas answer with one dry one-liner. There is no backend
-  and no LLM: replies come from keyword rules, and the avatar lip-syncs as each line types out.
 
-Everything runs in the browser, in English, Italian, Spanish and Chinese: the interface and
-the penguins' jokes alike. Switching language re-translates the chat history too.
+Everything runs in the browser, and the studio speaks English, Italian, Spanish and Chinese.
 
 ## Tour
 
-The demo chat comes first, then the studio: one page with three tabs on the floating rail
-(Customise, Animation, Settings), and a reference sheet. Every page has a light and a dark
+The studio is one page with three tabs on the floating rail (Customise, Animation, Settings),
+plus a reference sheet. Every page has a light and a dark
 theme; the screenshots are in dark mode.
-
-### Chat · [`/chat`](https://pingu-avatar.vercel.app/chat)
-
-A Grok-style chat with penguin personas: a LinkedIn strategist, a social media critic, a career
-coach, a dating coach, a chef, and Colonia, a group chat where they all answer. Each reply is one
-line, typed out while the avatar lip-syncs and then reacts with a mood.
-
-![The demo chat](docs/chat.png)
 
 ### Customise · [`/`](https://pingu-avatar.vercel.app)
 
@@ -75,15 +64,21 @@ faces side by side while working on the engine.
 
 ## Use the avatar in your project
 
-The avatar is distributed the [shadcn](https://ui.shadcn.com) way: copy the
-[`avatar/`](avatar/) folder into your React project and import from it. No package to install,
-and you own the code.
+Copy the [`avatar/`](avatar/) folder into your React project and import from it. There is no
+package to install, and the code is yours to change.
 
 ```tsx
 import { PinguAvatar } from "./avatar";
 
 <PinguAvatar size={120} state="happy" />
 <PinguAvatar size={80} shape="egg" color="#3b8be8" state="curious" />
+```
+
+Wire the state to your assistant: `listening` while the user types, `thinking` while the
+model works, `talking` while the answer streams in, then back to `idle`.
+
+```tsx
+<PinguAvatar size={64} state={busy ? "thinking" : streaming ? "talking" : "idle"} />
 ```
 
 Want a spin? Grab a ref:
@@ -114,7 +109,6 @@ npm run dev        # http://localhost:3000
 
 | Page | |
 |---|---|
-| `/chat` | The demo chat |
 | `/` | Studio, Customise tab |
 | `/?tab=motion` | Studio, Animation tab (montage editor) |
 | `/?tab=settings` | Studio, Settings tab |
@@ -127,9 +121,8 @@ avatar/        the reusable avatar (copy this folder)
   engine/      spring engine: states, shapes, faces, effects, the shared animation loop
   export/      optional PNG / SVG / GIF / MP4 export
 app/           Next.js routes and global styles
-components/    studio, chat and shared UI
-lib/           chat personas and replies, i18n, montage catalogue
-hooks/         chat state
+components/    studio and shared UI
+lib/           i18n, montage catalogue, sounds
 ```
 
 Built with Next.js 16, React 19, Tailwind CSS 4 and [Phosphor icons](https://phosphoricons.com).
@@ -140,11 +133,17 @@ Notes for contributors (and coding agents) are in [`CLAUDE.md`](CLAUDE.md).
 Made by Gabriel Spicuglia. If you use the avatar, a ⭐ on this repo or a line to say hello is
 appreciated.
 
-This is a non-commercial exploration project. The avatar's design, animations and the chat
-layout are based on xAI's Grok Bot (x.ai/bot); all rights to the original design belong to
+This is a non-commercial exploration project. The avatar's design and animations are based on
+xAI's Grok Bot (x.ai/bot); all rights to the original design belong to
 their owners, with the utmost respect for their work. "Pingu" is a trademark of its respective
 owners. This project is not affiliated with, or endorsed by, xAI or the owners of Pingu.
 
 ## Licence
 
 [MIT](LICENSE)
+
+<div align="center">
+
+<img src="docs/hero.gif" alt="Pingu changing shape, colour and expression" width="240" />
+
+</div>
