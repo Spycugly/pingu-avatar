@@ -59,8 +59,9 @@ export default function MontageDialog({
 
         <div className="mt-6 flex items-center justify-end gap-3">
           {progress && <span className="mr-auto text-[13px] tabular-nums text-st-muted">{progress}</span>}
-          <button onClick={onCancel} disabled={busy} className="h-11 rounded-xl px-4 text-[15px] text-st-muted transition hover:text-st-ink disabled:opacity-40">
-            {t("montage.cancel")}
+          {/* Stays enabled while exporting: then it cancels the export. */}
+          <button onClick={onCancel} className="h-11 rounded-xl px-4 text-[15px] text-st-muted transition hover:text-st-ink">
+            {busy ? t("export.cancel") : t("montage.cancel")}
           </button>
           <button
             onClick={() => onDownload(format, bg)}

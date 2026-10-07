@@ -150,6 +150,9 @@ save(await framesToGif(frames, { size: 480, fps: 15, background: null }), "pingu
 - GIF needs `npm i gifenc` (MIT). MP4 and WebM (`framesToVideo`) need `npm i mediabunny` (MPL-2.0).
   Both are loaded with a dynamic `import()` only when you call them.
 - `framesToAnimatedSvg` needs nothing extra.
+- To make an export cancellable, pass an `AbortSignal`: as the sixth argument of `recordFrames`,
+  or as `signal` in the options of `framesToGif` and `framesToVideo`. Aborting rejects the promise
+  with an `"AbortError"` `DOMException`.
 - `gifenc.d.ts` provides the types `gifenc` does not ship.
 
 ## Notes

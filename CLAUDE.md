@@ -58,6 +58,7 @@ A port of the Grok Bot avatar, rendered as imperative SVG. `avatar/` is distribu
 
 - `avatar/export/pingu-export.ts`: still PNG/SVG download and clipboard copy (`PinguStudio` exports from a separate front-facing still copy, never the live spinning avatar).
 - `avatar/export/pingu-media.ts`: animated export. The engine runs on the real clock, so `recordFrames` serialises the live SVG at a fixed fps, then frames are rasterised and encoded (`gifenc` for GIF, `mediabunny` for MP4/WebM, SMIL for animated SVG). `avatar/export/gifenc.d.ts` provides the missing types.
+- Animated exports take an `AbortSignal` (`recordFrames`' sixth argument, `signal` in the `framesToGif`/`framesToVideo` options). In the studio, `run(job, failure, animated)` hands each job a signal; while an animated export runs, the export button becomes "Cancel export", and the montage dialog's Cancel button stops the export.
 
 ## Styling and copy
 

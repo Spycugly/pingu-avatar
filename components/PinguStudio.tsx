@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CaretDown, Check, Copy, DownloadSimple, GithubLogo } from "@phosphor-icons/react";
+import { CaretDown, Check, Copy, DownloadSimple, GithubLogo, X } from "@phosphor-icons/react";
 import { PINGU_AUTO, PinguAvatar, syllableFor, type EngineState, type PinguHandle, type ShapeName } from "@/avatar";
 import NavRail, { useTheme, type RailItem } from "./NavRail";
 import Timeline from "./studio/Timeline";
@@ -236,28 +236,42 @@ export default function PinguStudio() {
   const stillSvg = () => exportRef.current?.querySelector("svg") ?? null;
   const liveSvg = () => stage.current?.querySelector("svg") ?? null;
 
-  const run = async (job: () => Promise<string | void>, failure: Key = "export.failed") => {
+  /** The running export, if any: aborting it cancels the recording or the encoding. */
+  const abort = useRef<AbortController | null>(null);
+  /** An animated export is running: the export button turns into "Cancel export". */
+  const [cancellable, setCancellable] = useState(false);
+  const cancelExport = () => {
+    play("close");
+    abort.current?.abort();
+  };
+
+  const run = async (job: (signal: AbortSignal) => Promise<string | void>, failure: Key = "export.failed", animated = false) => {
     setMenu(false);
     if (busy) return;
     setBusy(true);
+    setCancellable(animated);
+    const controller = (abort.current = new AbortController());
     try {
-      const done = await job();
+      const done = await job(controller.signal);
       setToast(done ?? t("export.started"));
       play("done");
     } catch {
-      setToast(t(failure));
+      setToast(t(controller.signal.aborted ? "export.cancelled" : failure));
     } finally {
+      abort.current = null;
+      setCancellable(false);
       setBusy(false);
     }
   };
 
-  const recordLive = (ms: number, fps: number, size: number) =>
+  const recordLive = (ms: number, fps: number, size: number, signal: AbortSignal) =>
     recordFrames(
       liveSvg,
       ms,
       fps,
       (d, n) => setToast(t("export.recording", { done: Math.floor(d / fps), total: Math.round(n / fps) })),
       size,
+      signal,
     );
 
   const exportAs = (kind: "png" | "svg" | "animSvg" | "gif" | "copyPng" | "copySvg") => {
@@ -276,25 +290,28 @@ export default function PinguStudio() {
         return t("export.copied");
       }, "export.copyFailed");
     if (kind === "animSvg")
-      return run(async () => {
-        const frames = await recordLive(CLIP_MS, 15, 512);
+      return run(async (signal) => {
+        const frames = await recordLive(CLIP_MS, 15, 512, signal);
         save(new Blob([framesToAnimatedSvg(frames, 15)], { type: "image/svg+xml" }), `${filename}.svg`);
-      });
-    return run(async () => {
-      const frames = await recordLive(CLIP_MS, 15, 480);
+      }, undefined, true);
+    return run(async (signal) => {
+      const frames = await recordLive(CLIP_MS, 15, 480, signal);
       const gif = await framesToGif(frames, {
         size: 480,
         fps: 15,
         background: bg(transparent),
         onProgress: (d, n) => setToast(t("export.encoding", { pct: Math.round((d / n) * 100) })),
+        signal,
       });
       save(gif, `${filename}.gif`);
-    });
+    }, undefined, true);
   };
 
   const exportMontage = async (format: MontageFormat, background: MontageBackground) => {
     if (busy || !clips.length) return;
     setBusy(true);
+    const controller = (abort.current = new AbortController());
+    const signal = controller.signal;
     const fps = format === "mp4" ? 24 : 15;
     const size = format === "mp4" ? 720 : 480;
     const fill = background === "white" || format === "mp4" ? "#ffffff" : null;
@@ -310,22 +327,27 @@ export default function PinguStudio() {
         fps,
         (d, n) => setProgress(t("export.recording", { done: Math.floor(d / fps), total: Math.round(n / fps) })),
         size,
+        signal,
       );
       setPlaying(false);
       recording.current = false;
       const onProgress = (d: number, n: number) => setProgress(t("export.encoding", { pct: Math.round((d / n) * 100) }));
       if (format === "gif") {
-        save(await framesToGif(frames, { size, fps, background: fill, onProgress }), "pingu-montage.gif");
+        save(await framesToGif(frames, { size, fps, background: fill, onProgress, signal }), "pingu-montage.gif");
         setToast(t("export.started"));
       } else {
-        const { blob, ext } = await framesToVideo(frames, { size, fps, background: fill ?? "#ffffff", onProgress });
+        const { blob, ext } = await framesToVideo(frames, { size, fps, background: fill ?? "#ffffff", onProgress, signal });
         save(blob, `pingu-montage.${ext}`);
         setToast(ext === "mp4" ? t("export.started") : t("export.webm"));
       }
       setDialog(false);
     } catch {
-      setToast(t("export.failed"));
+      if (signal.aborted) {
+        setToast(t("export.cancelled"));
+        setDialog(false);
+      } else setToast(t("export.failed"));
     } finally {
+      abort.current = null;
       recording.current = false;
       setPlaying(false);
       setProgress(null);
@@ -403,14 +425,24 @@ export default function PinguStudio() {
         ) : (
           <div ref={menuRef} className="relative">
             <div className="flex h-11 overflow-hidden rounded-xl bg-st-accent text-[15px] text-st-accent-ink shadow-[var(--st-shadow)]">
-              <button
-                onClick={() => exportAs("png")}
-                disabled={busy}
-                className="flex items-center gap-2 px-4 transition hover:bg-[color-mix(in_srgb,currentColor_10%,transparent)] disabled:opacity-60"
-              >
-                <DownloadIcon />
-                {t("export.png")}
-              </button>
+              {cancellable ? (
+                <button
+                  onClick={cancelExport}
+                  className="flex items-center gap-2 px-4 transition hover:bg-[color-mix(in_srgb,currentColor_10%,transparent)]"
+                >
+                  <X size={18} weight="bold" />
+                  {t("export.cancel")}
+                </button>
+              ) : (
+                <button
+                  onClick={() => exportAs("png")}
+                  disabled={busy}
+                  className="flex items-center gap-2 px-4 transition hover:bg-[color-mix(in_srgb,currentColor_10%,transparent)] disabled:opacity-60"
+                >
+                  <DownloadIcon />
+                  {t("export.png")}
+                </button>
+              )}
               <span className="w-px bg-[color-mix(in_srgb,currentColor_18%,transparent)]" />
               <button
                 onClick={() => {
@@ -635,7 +667,15 @@ export default function PinguStudio() {
         </div>
       </aside>
 
-      {dialog && <MontageDialog busy={busy} progress={progress} onCancel={() => setDialog(false)} onDownload={exportMontage} />}
+      {dialog && (
+        <MontageDialog
+          busy={busy}
+          progress={progress}
+          // While it exports, "Cancel" stops the export (exportMontage then closes the dialog).
+          onCancel={() => (busy ? cancelExport() : setDialog(false))}
+          onDownload={exportMontage}
+        />
+      )}
     </main>
   );
 }

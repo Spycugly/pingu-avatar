@@ -10,6 +10,9 @@ export type Progress = (done: number, total: number) => void;
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
+/** Every export takes an optional AbortSignal: aborting rejects it with an "AbortError" DOMException. */
+const stop = (signal?: AbortSignal) => signal?.throwIfAborted();
+
 /** Serialise the live avatar `fps` times a second for `ms` milliseconds. */
 export function recordFrames(
   getSvg: () => SVGSVGElement | null,
@@ -17,19 +20,30 @@ export function recordFrames(
   fps: number,
   onProgress?: Progress,
   size = 512,
+  signal?: AbortSignal,
 ): Promise<string[]> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const frames: string[] = [];
     const total = Math.max(1, Math.round((ms / 1000) * fps));
     const start = performance.now();
+    let timer = 0;
+    const abort = () => {
+      clearTimeout(timer);
+      reject(signal!.reason);
+    };
+    if (signal?.aborted) return abort();
+    signal?.addEventListener("abort", abort, { once: true });
     const grab = () => {
       const svg = getSvg();
       if (svg) frames.push(standalone(svg, size));
       onProgress?.(frames.length, total);
-      if (frames.length >= total) return resolve(frames);
+      if (frames.length >= total) {
+        signal?.removeEventListener("abort", abort);
+        return resolve(frames);
+      }
       // Keep to the wall clock so frames stay evenly spaced even if one grab runs late.
       const next = start + (frames.length * 1000) / fps;
-      setTimeout(grab, Math.max(0, next - performance.now()));
+      timer = window.setTimeout(grab, Math.max(0, next - performance.now()));
     };
     grab();
   });
@@ -60,13 +74,20 @@ async function rasteriser(size: number, background: string | null) {
 
 export async function framesToGif(
   frames: string[],
-  { size = 480, fps = 15, background = null as string | null, onProgress }: { size?: number; fps?: number; background?: string | null; onProgress?: Progress } = {},
+  {
+    size = 480,
+    fps = 15,
+    background = null as string | null,
+    onProgress,
+    signal,
+  }: { size?: number; fps?: number; background?: string | null; onProgress?: Progress; signal?: AbortSignal } = {},
 ) {
   const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
   const { ctx, draw } = await rasteriser(size, background);
   const gif = GIFEncoder();
   const delay = Math.round(1000 / fps);
   for (let i = 0; i < frames.length; i++) {
+    stop(signal);
     await draw(frames[i]);
     const { data } = ctx.getImageData(0, 0, size, size);
     if (background) {
@@ -94,7 +115,13 @@ export async function framesToGif(
 /** H.264 MP4 when the browser can encode it, VP9 WebM otherwise. */
 export async function framesToVideo(
   frames: string[],
-  { size = 720, fps = 24, background = "#ffffff", onProgress }: { size?: number; fps?: number; background?: string; onProgress?: Progress } = {},
+  {
+    size = 720,
+    fps = 24,
+    background = "#ffffff",
+    onProgress,
+    signal,
+  }: { size?: number; fps?: number; background?: string; onProgress?: Progress; signal?: AbortSignal } = {},
 ): Promise<{ blob: Blob; ext: "mp4" | "webm" }> {
   const mb = await import("mediabunny");
   const mp4 = await mb.canEncodeVideo("avc", { width: size, height: size });
@@ -106,10 +133,16 @@ export async function framesToVideo(
   const source = new mb.CanvasSource(canvas, { codec: mp4 ? "avc" : "vp9", quality: mb.QUALITY_HIGH });
   output.addVideoTrack(source, { frameRate: fps });
   await output.start();
-  for (let i = 0; i < frames.length; i++) {
-    await draw(frames[i]);
-    await source.add(i / fps, 1 / fps);
-    onProgress?.(i + 1, frames.length);
+  try {
+    for (let i = 0; i < frames.length; i++) {
+      stop(signal);
+      await draw(frames[i]);
+      await source.add(i / fps, 1 / fps);
+      onProgress?.(i + 1, frames.length);
+    }
+  } catch (err) {
+    await output.cancel().catch(() => {});
+    throw err;
   }
   await output.finalize();
   const buffer = (output.target as InstanceType<typeof mb.BufferTarget>).buffer!;
