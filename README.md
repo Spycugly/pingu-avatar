@@ -10,6 +10,8 @@
 
 [**Live demo**](https://pingu-avatar.vercel.app) · [Avatar docs](avatar/README.md) · [Demo chat](https://pingu-avatar.vercel.app/chat)
 
+https://github.com/user-attachments/assets/b92165bb-3d39-44a0-a4a5-55df158d856a
+
 </div>
 
 ---
