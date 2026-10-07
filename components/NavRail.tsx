@@ -29,6 +29,17 @@ const subscribeScheme = (cb: () => void) => {
   mq.addEventListener("change", cb);
   return () => mq.removeEventListener("change", cb);
 };
+const PHONE_QUERY = "(max-width: 767px)";
+const subscribePhone = (cb: () => void) => {
+  const mq = window.matchMedia(PHONE_QUERY);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
+/** Below md, where the rail is the bottom tab bar. Page changes there are instant, as tab switches
+    are on iOS (WebKit also draws the translucent bar wrongly inside view-transition snapshots). */
+export const usePhone = () =>
+  useSyncExternalStore(subscribePhone, () => window.matchMedia(PHONE_QUERY).matches, () => false);
+
 const systemTheme = (): Theme => (window.matchMedia(DARK_QUERY).matches ? "dark" : "light");
 
 /** Light/dark theme of the studio and the chat, shared by both pages. Dark by default; only a
@@ -114,6 +125,7 @@ export default function NavRail({
   tooltipClassName?: string;
 }) {
   const { t } = useI18n();
+  const phone = usePhone();
   const navRef = useRef<HTMLElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const placed = useRef(false);
@@ -172,7 +184,7 @@ export default function NavRail({
   // Both pages render their own rail under the same view-transition name: on a page change the
   // browser pairs them and .rail-anchor (globals.css) keeps it still while the page cross-fades.
   return (
-    <ViewTransition name="nav-rail" share="rail-anchor" default="none">
+    <ViewTransition name="nav-rail" share={phone ? "none" : "rail-anchor"} default="none">
       <nav
         ref={navRef}
         className={`relative z-10 flex gap-1 rounded-2xl min-[400px]:gap-2 bg-st-surface p-2 shadow-[var(--st-shadow)] transition-[background-color,box-shadow] duration-300 max-md:fixed max-md:inset-x-4 max-md:bottom-[max(12px,env(safe-area-inset-bottom))] max-md:z-40 max-md:mx-auto max-md:max-w-[440px] max-md:gap-0 max-md:rounded-[31px] max-md:bg-st-surface/75 max-md:p-1 max-md:ring-[0.5px] max-md:ring-st-line max-md:backdrop-blur-xl max-md:backdrop-saturate-150 ${

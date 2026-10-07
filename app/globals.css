@@ -245,14 +245,19 @@ html[data-theme="light"] body {
 @keyframes page-in {
   from { opacity: 0; transform: translateY(6px); }
 }
-::view-transition-group(.rail-anchor) {
+/* By name too: WebKit builds without view-transition-class ignore the class selectors, and the
+   rail then fades with the page instead of staying put. */
+::view-transition-group(.rail-anchor),
+::view-transition-group(nav-rail) {
   animation: none;
   z-index: 100;
 }
-::view-transition-old(.rail-anchor) {
+::view-transition-old(.rail-anchor),
+::view-transition-old(nav-rail) {
   display: none;
 }
-::view-transition-new(.rail-anchor) {
+::view-transition-new(.rail-anchor),
+::view-transition-new(nav-rail) {
   animation: none;
 }
 /* Phones: opening a chat pushes it in from the right over the list, going back pops it off. */
@@ -280,6 +285,15 @@ html[data-theme="light"] body {
 }
 @keyframes slide-from-left {
   from { transform: translateX(-30%); opacity: 0.4; }
+}
+/* WebKit draws an element with a backdrop filter as an empty box (or a bare rectangle) in a view
+   transition snapshot: while one runs, the phone tab bar drops its blur and goes opaque. */
+@media (max-width: 767px) {
+  html:active-view-transition nav[aria-label="Pingu"] {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: var(--st-surface);
+  }
 }
 /* Clicks pass through to the live page while a transition runs. */
 ::view-transition {

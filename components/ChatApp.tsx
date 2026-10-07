@@ -94,7 +94,9 @@ export default function ChatApp() {
           tooltipClassName="left-1/2 top-[calc(100%+8px)] -translate-x-1/2 min-[1180px]:left-[calc(100%+12px)] min-[1180px]:top-1/2 min-[1180px]:translate-x-0 min-[1180px]:-translate-y-1/2"
         />
       </div>
-      <ViewTransition update={{ "chat-push": "chat-push", "chat-pop": "chat-pop", default: "none" }}>
+      {/* Only the phone list/chat slides animate here: on a page change the shell must not fade in its
+          own layer (an opaque rectangle above or below the translucent tab bar). */}
+      <ViewTransition default="none" update={{ "chat-push": "chat-push", "chat-pop": "chat-pop", default: "none" }}>
         <div className="relative flex h-dvh w-full overflow-hidden bg-gb-main md:h-[660px] md:max-h-[calc(100dvh-176px)] md:w-[976px] md:rounded-[24px] md:ring-1 md:ring-gb-ring min-[1180px]:max-h-[calc(100dvh-92px)]">
           {/* Sidebar */}
           <aside
