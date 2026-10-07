@@ -1,6 +1,6 @@
 <div align="center">
 
-https://github.com/user-attachments/assets/b92165bb-3d39-44a0-a4a5-55df158d856a
+https://github.com/user-attachments/assets/ebb7d630-bd49-4a8f-9329-f3450fb0f3b9
 
 # Pingu Avatar
 
@@ -29,20 +29,22 @@ Everything runs in the browser, and the studio speaks English, Italian, Spanish 
 ## Tour
 
 The studio is one page with three tabs on the floating rail (Customise, Animation, Settings),
-plus a reference sheet. Every page has a light and a dark
-theme; the screenshots are in dark mode.
+plus a reference sheet. On phones the rail becomes a tab bar at the bottom of the screen. Every
+page has a light and a dark theme, or follows the system; the screenshots are in dark mode.
 
 ### Customise · [`/`](https://pingu-avatar.vercel.app)
 
-Pick a body shape, an expression and a colour, and watch Pingu morph between them. The export
-button downloads or copies the result as PNG, SVG, animated SVG or GIF.
+Pick a body shape, an expression and a colour, and watch Pingu morph between them. Below the
+colours you choose the theme: light, dark or system. The export button downloads or copies the
+result as PNG, SVG, animated SVG or GIF.
 
 ![The Customise tab](docs/studio.png)
 
 ### Animation · [`/?tab=motion`](https://pingu-avatar.vercel.app/?tab=motion)
 
-Click animations (wink, orbit, noot!, laugh…) to line them up on a timeline, drag a clip's edge
-to change its length, and play the montage back. **Export** records it as an MP4 (white background) or
+Click animations (wink, orbit, noot!, laugh…) to line them up on a timeline, or drag them onto
+it: onto a clip to replace it, between two clips to insert. Drag a clip's edge to change its
+length, and play the montage back. **Export** records it as an MP4 (white background) or
 a GIF (white or transparent). You can also type a line and make Pingu say it, with
 lip-sync.
 
@@ -50,8 +52,8 @@ lip-sync.
 
 ### Settings · [`/?tab=settings`](https://pingu-avatar.vercel.app/?tab=settings)
 
-Interface language, a pose you can lock (turn, tilt, roll), whether Pingu follows the cursor
-or dozes off when ignored, and a transparent background for exports.
+Interface language, interface sounds, a pose you can lock (turn, tilt, roll), whether Pingu
+follows the cursor or dozes off when ignored, and a transparent background for exports.
 
 ![The Settings tab](docs/settings.png)
 
@@ -141,9 +143,3 @@ owners. This project is not affiliated with, or endorsed by, xAI or the owners o
 ## Licence
 
 [MIT](LICENSE)
-
-<div align="center">
-
-<img src="docs/hero.gif" alt="Pingu changing shape, colour and expression" width="240" />
-
-</div>
