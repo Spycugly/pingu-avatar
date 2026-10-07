@@ -87,8 +87,8 @@ type Tone = {
 const CUES = {
   /** Any small press: tiles, menu items, chats in the list. */
   tap: [{ hz: 300, ms: 26, gain: 0.05, wave: "triangle", cut: 1600, atk: 4 }],
-  /** Rail: moving to another tab or page. */
-  slide: [{ hz: 340, to: 290, ms: 200, gain: 0.05, cut: 900, atk: 30 }],
+  /** Rail: moving to another tab or page. A soft droplet: a quick upward glide. */
+  slide: [{ hz: 420, to: 760, ms: 55, gain: 0.03, cut: 1800, atk: 6 }],
   /** Theme switch and other toggles. */
   on: [{ hz: 520, to: 640, ms: 70, gain: 0.04, cut: 1400, atk: 6 }],
   off: [{ hz: 440, to: 330, ms: 90, gain: 0.04, cut: 1100, atk: 6 }],

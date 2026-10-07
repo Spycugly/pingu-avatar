@@ -66,7 +66,7 @@ let lastActive: RailItem | null = null;
 
 /** Every item is drawn muted: the active colours come from the highlight layer above it. */
 const itemClass =
-  "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-300 hover:bg-st-hover hover:text-st-ink";
+  "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-150 hover:bg-st-hover hover:text-st-ink";
 
 /** Sun and moon share one cell and swap with a turn and a fade. */
 const swap = (shown: boolean) =>

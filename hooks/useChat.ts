@@ -150,8 +150,14 @@ export function useChat() {
         answering: hasUserTurn && lastMsg?.role === "pingu",
         recent: before.flatMap((m) => (m.role === "pingu" && m.line ? [m.line] : [])).slice(-12),
       });
+      // A rare treat, not a habit: about one message in ten, and never while one of the last few
+      // user messages still carries a reaction.
+      const reactedLately = before
+        .filter((m) => m.role === "user")
+        .slice(-4)
+        .some((m) => m.reaction);
       const reaction =
-        Math.random() < 0.35 ? REACTIONS[Math.floor(Math.random() * REACTIONS.length)] : undefined;
+        !reactedLately && Math.random() < 0.1 ? REACTIONS[Math.floor(Math.random() * REACTIONS.length)] : undefined;
 
       setThreads((t) => ({
         ...t,
