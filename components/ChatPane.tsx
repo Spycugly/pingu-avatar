@@ -97,7 +97,7 @@ export default function ChatPane({
   return (
     <section className={`relative min-w-0 flex-1 flex-col bg-gb-main ${className}`}>
       {/* Header */}
-      <header className="flex h-[52px] shrink-0 items-center gap-1 border-b border-gb-divider px-4 md:h-[44px]">
+      <header className="flex h-[calc(52px+env(safe-area-inset-top))] shrink-0 pt-[env(safe-area-inset-top)] items-center gap-1 border-b border-gb-divider px-4 md:h-[44px]">
         <button
           onClick={onBack}
           className="-ml-3 grid size-11 shrink-0 place-items-center rounded-md text-gb-text-2 hover:bg-gb-hover md:hidden"
@@ -259,7 +259,7 @@ export default function ChatPane({
       </div>
 
       {/* Composer */}
-      <div className="relative shrink-0 px-5 pb-3">
+      <div className="relative shrink-0 px-5 pb-[max(12px,env(safe-area-inset-bottom))] md:pb-3">
         <div className="composer-fade pointer-events-none absolute inset-x-0 -top-12 h-12" />
         <Composer
           name={name}

@@ -10,7 +10,9 @@ import { play } from "@/lib/sound";
 
 /* The floating rail shared by the studio (home page) and the chat, identical on both: the chat
    first, then the studio tabs. In the chat every studio item links
-   home with ?tab=; in the studio they switch tabs in place and "Chat" links to /chat. */
+   home with ?tab=; in the studio they switch tabs in place and "Chat" links to /chat.
+   On phones (below md) it is an iOS-style tab bar instead: a floating glass capsule at the bottom,
+   above the home indicator, with a 10px label under each 24px icon (Apple's tab bar sizes). */
 
 export type RailItem = "chat" | "style" | "motion" | "settings";
 export type Theme = "light" | "dark";
@@ -80,17 +82,31 @@ let lastActive: RailItem | null = null;
 
 /** Every item is drawn muted: the active colours come from the highlight layer above it. */
 const itemClass =
-  "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-150 hover:bg-st-hover hover:text-st-ink";
+  "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-150 hover:bg-st-hover hover:text-st-ink max-md:flex max-md:h-[54px] max-md:w-full max-md:flex-col max-md:justify-center max-md:gap-0.5 max-md:rounded-[22px] max-md:hover:bg-transparent";
+
+/** An item's icon and, on phones, its label: drawn twice, muted below and in the highlight's ink above. */
+function ItemFace({ item, label }: { item: RailItem; label: string }) {
+  const ItemIcon = ICONS[item];
+  return (
+    <>
+      <ItemIcon size={20} weight="fill" className="max-md:size-6" />
+      <span className="whitespace-nowrap text-[10px] font-medium leading-3 tracking-[0.01em] md:hidden">{label}</span>
+    </>
+  );
+}
 
 export default function NavRail({
   active,
   onTab,
+  hideOnMobile = false,
   className = "",
   tooltipClassName = "left-1/2 top-[calc(100%+8px)] -translate-x-1/2 md:left-[calc(100%+12px)] md:top-1/2 md:translate-x-0 md:-translate-y-1/2",
 }: {
   active: RailItem;
   /** Studio only: switch tab in place instead of navigating. */
   onTab?: (item: Exclude<RailItem, "chat">) => void;
+  /** Hide the phone tab bar, e.g. inside a chat conversation where the composer owns the bottom edge. */
+  hideOnMobile?: boolean;
   className?: string;
   /** Tooltip placement: below the horizontal rail, beside the vertical one (match the breakpoint where the rail turns vertical). */
   tooltipClassName?: string;
@@ -114,14 +130,19 @@ export default function NavRail({
       if (!el) return;
       for (const ink of pill.querySelectorAll<HTMLElement>("[data-ink]")) {
         const at = nav.querySelector<HTMLElement>(`[data-rail="${ink.dataset.ink}"]`);
-        if (at) ink.style.transform = `translate(${at.offsetLeft}px, ${at.offsetTop}px)`;
+        if (!at) continue;
+        ink.style.transform = `translate(${at.offsetLeft}px, ${at.offsetTop}px)`;
+        ink.style.width = `${at.offsetWidth}px`;
+        ink.style.height = `${at.offsetHeight}px`;
       }
+      // The highlight takes the item's own corner radius: a small square on the rail, a capsule on phones.
+      const radius = getComputedStyle(el.firstElementChild ?? el).borderTopLeftRadius;
       const top = el.offsetTop;
       const left = el.offsetLeft;
       const right = nav.clientWidth - left - el.offsetWidth;
       const bottom = nav.clientHeight - top - el.offsetHeight;
       pill.style.transition = animate ? "" : "none";
-      pill.style.clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round 12px)`;
+      pill.style.clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round ${radius})`;
       pill.style.opacity = "1";
     };
     const from = placed.current ? null : lastActive;
@@ -143,7 +164,8 @@ export default function NavRail({
     return () => ro.disconnect();
   }, [active]);
 
-  const tip = (label: string) => <Tooltip label={label} className={tooltipClassName} />;
+  // Phones show the labels under the icons, so no tooltips there.
+  const tip = (label: string) => <Tooltip label={label} className={`max-md:hidden ${tooltipClassName}`} />;
 
   // Both pages render their own rail under the same view-transition name: on a page change the
   // browser pairs them and .rail-anchor (globals.css) keeps it still while the page cross-fades.
@@ -151,18 +173,19 @@ export default function NavRail({
     <ViewTransition name="nav-rail" share="rail-anchor" default="none">
       <nav
         ref={navRef}
-        className={`relative z-10 flex gap-1 rounded-2xl min-[400px]:gap-2 bg-st-surface p-2 shadow-[var(--st-shadow)] transition-[background-color,box-shadow] duration-300 ${className}`}
+        className={`relative z-10 flex gap-1 rounded-2xl min-[400px]:gap-2 bg-st-surface p-2 shadow-[var(--st-shadow)] transition-[background-color,box-shadow] duration-300 max-md:fixed max-md:inset-x-4 max-md:bottom-[max(12px,env(safe-area-inset-bottom))] max-md:z-40 max-md:mx-auto max-md:max-w-[440px] max-md:gap-0 max-md:rounded-[30px] max-md:bg-st-surface/75 max-md:p-1 max-md:ring-[0.5px] max-md:ring-st-line max-md:backdrop-blur-xl max-md:backdrop-saturate-150 ${
+          hideOnMobile ? "max-md:hidden" : ""
+        } ${className}`}
         aria-label="Pingu"
       >
         {ITEMS.map((item) => {
           const label = t(LABELS[item]);
           const isActive = item === active;
-          const ItemIcon = ICONS[item];
-          const icon = <ItemIcon size={20} weight="fill" />;
+          const icon = <ItemFace item={item} label={label} />;
           if (item === "chat" || !onTab) {
             const href = item === "chat" ? "/chat" : `/?tab=${item}`;
             return (
-              <div key={item} data-rail={item} className="group relative">
+              <div key={item} data-rail={item} className="group relative max-md:flex-1">
                 <Link
                   href={href}
                   onClick={() => !isActive && play("slide")}
@@ -177,7 +200,7 @@ export default function NavRail({
             );
           }
           return (
-            <div key={item} data-rail={item} className="group relative">
+            <div key={item} data-rail={item} className="group relative max-md:flex-1">
               <button
                 onClick={() => {
                   if (!isActive) play("slide");
@@ -197,16 +220,17 @@ export default function NavRail({
         <div
           ref={pillRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-st-accent text-st-accent-ink opacity-0 transition-[clip-path,background-color,color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none"
+          className="pointer-events-none absolute inset-0 bg-st-accent text-st-accent-ink opacity-0 max-md:bg-st-hover max-md:text-st-ink transition-[clip-path,background-color,color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none"
         >
-          {ITEMS.map((item) => {
-            const ItemIcon = ICONS[item];
-            return (
-              <span key={item} data-ink={item} className="absolute left-0 top-0 grid size-11 place-items-center">
-                <ItemIcon size={20} weight="fill" />
-              </span>
-            );
-          })}
+          {ITEMS.map((item) => (
+            <span
+              key={item}
+              data-ink={item}
+              className="absolute left-0 top-0 grid size-11 place-items-center max-md:flex max-md:flex-col max-md:justify-center max-md:gap-0.5"
+            >
+              <ItemFace item={item} label={t(LABELS[item])} />
+            </span>
+          ))}
         </div>
       </nav>
     </ViewTransition>

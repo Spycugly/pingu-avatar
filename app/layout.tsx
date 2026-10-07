@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import InlineScript from "@/components/InlineScript";
 import "./globals.css";
@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: { default: "Pingu AI Assistant", template: "%s · Pingu AI Assistant" },
   description: "An animated penguin avatar for React, with a customizer studio and a demo chat. Noot noot.",
 };
+
+// "cover" fills the whole iPhone screen and makes env(safe-area-inset-*) report the home indicator,
+// which the phone tab bar (NavRail) and the chat composer keep clear of.
+export const viewport: Viewport = { viewportFit: "cover" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

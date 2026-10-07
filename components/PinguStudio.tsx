@@ -390,16 +390,16 @@ export default function PinguStudio() {
   return (
     <main
       data-theme={theme}
-      className="studio relative flex min-h-dvh flex-col overflow-x-clip bg-st-bg text-st-ink transition-colors md:h-dvh md:flex-row md:overflow-hidden"
+      className="studio relative flex min-h-dvh flex-col overflow-x-clip bg-st-bg pb-[calc(max(12px,env(safe-area-inset-bottom))+80px)] text-st-ink transition-colors md:h-dvh md:flex-row md:overflow-hidden md:pb-0"
     >
       <NavRail
         active={tab}
         onTab={selectTab}
-        className="mx-auto mt-5 md:absolute md:left-5 md:top-1/2 md:mt-0 md:-translate-y-1/2 md:flex-col"
+        className="md:absolute md:left-5 md:top-1/2 md:-translate-y-1/2 md:flex-col"
       />
 
       {/* Stage */}
-      <section className="sticky top-0 z-[5] flex min-w-0 flex-col items-center justify-center gap-3 bg-st-bg px-4 pb-2 pt-4 transition-colors md:relative md:flex-1 md:gap-8 md:overflow-hidden md:px-6 md:py-10 md:pl-28">
+      <section className="sticky top-0 z-[5] flex min-w-0 flex-col items-center justify-center gap-3 bg-st-bg px-4 pb-2 pt-[max(24px,env(safe-area-inset-top))] transition-colors md:relative md:flex-1 md:gap-8 md:overflow-hidden md:px-6 md:py-10 md:pl-28">
         <div ref={stage}>
           <PinguAvatar
             ref={pingu}
