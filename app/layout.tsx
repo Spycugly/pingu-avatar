@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pingu",
+  title: { default: "Pingu AI Assistant", template: "%s · Pingu AI Assistant" },
   description: "An animated penguin avatar for React, with a customizer studio and a demo chat. Noot noot.",
 };
 

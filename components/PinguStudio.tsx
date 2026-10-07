@@ -19,6 +19,7 @@ import {
   save,
 } from "@/avatar/export";
 import { LANGS, useI18n, type Key } from "@/lib/i18n";
+import { play, setSoundOn, useSoundOn } from "@/lib/sound";
 import { GITHUB_URL, LINKEDIN_URL } from "@/lib/links";
 import { ANIMATIONS, clipStarts, defaultCycle, getAnimation, makeClip, type AnimId, type Clip } from "@/lib/montage";
 
@@ -68,6 +69,7 @@ const parseTab = (t: string | null): Tab => (t === "motion" || t === "settings" 
 
 export default function PinguStudio() {
   const { t, lang, setLang } = useI18n();
+  const sound = useSoundOn();
   // Read ?tab= through the router, not window.location: when the chat rail opens a tab, this
   // component mounts while the address bar still reads /chat.
   const params = useSearchParams();
@@ -179,9 +181,15 @@ export default function PinguStudio() {
   useEffect(() => {
     if (!menu) return;
     const down = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenu(false);
+      if (menuRef.current?.contains(e.target as Node)) return;
+      play("close");
+      setMenu(false);
     };
-    const key = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      play("close");
+      setMenu(false);
+    };
     document.addEventListener("pointerdown", down);
     document.addEventListener("keydown", key);
     return () => {
@@ -235,6 +243,7 @@ export default function PinguStudio() {
     try {
       const done = await job();
       setToast(done ?? t("export.started"));
+      play("done");
     } catch {
       setToast(t(failure));
     } finally {
@@ -404,7 +413,10 @@ export default function PinguStudio() {
               </button>
               <span className="w-px bg-[color-mix(in_srgb,currentColor_18%,transparent)]" />
               <button
-                onClick={() => setMenu((m) => !m)}
+                onClick={() => {
+                  play(menu ? "close" : "open");
+                  setMenu(!menu);
+                }}
                 disabled={busy}
                 className="grid w-11 place-items-center transition hover:bg-[color-mix(in_srgb,currentColor_10%,transparent)]"
                 aria-label={t("export.more")}
@@ -422,8 +434,13 @@ export default function PinguStudio() {
             <div
               aria-hidden={!menu}
               inert={!menu}
-              className={`absolute left-1/2 top-[calc(100%+10px)] z-20 w-[280px] origin-top -translate-x-1/2 rounded-2xl bg-st-raised p-1.5 text-[15px] shadow-[0_12px_40px_rgba(0,0,0,0.16)] ring-1 ring-st-line transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none md:top-auto md:bottom-[calc(100%+10px)] md:origin-bottom ${
-                menu ? "visible scale-y-100 opacity-100" : "invisible scale-y-75 opacity-0"
+              // Scale, translate and blur are separate CSS properties in Tailwind v4, so each is listed
+              // in the transition (a plain `transform` would leave them snapping). Opens with a soft
+              // ease-out, closes quicker with an ease-in, shrinking back towards the button.
+              className={`absolute left-1/2 top-[calc(100%+10px)] z-20 w-[280px] origin-top -translate-x-1/2 rounded-2xl bg-st-raised p-1.5 text-[15px] shadow-[0_12px_40px_rgba(0,0,0,0.16)] ring-1 ring-st-line transition-[opacity,scale,translate,filter,visibility] motion-reduce:transition-none md:top-auto md:bottom-[calc(100%+10px)] md:origin-bottom ${
+                menu
+                  ? "visible translate-y-0 scale-100 opacity-100 blur-none duration-220 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                  : "invisible -translate-y-1.5 scale-95 opacity-0 blur-[2px] duration-150 ease-[cubic-bezier(0.4,0,1,1)] md:translate-y-1.5"
               }`}
             >
                 <MenuItem icon={<DownloadIcon />} onClick={() => exportAs("png")}>
@@ -460,153 +477,162 @@ export default function PinguStudio() {
 
       {/* Panel */}
       <aside className="no-scrollbar w-full shrink-0 px-5 pb-10 pt-4 md:w-[440px] md:overflow-y-auto md:py-10 md:pl-4 md:pr-8">
-        {tab === "style" && (
-          <>
-            <Section title={t("studio.shape")}>
-              <div className="grid grid-cols-4 gap-1">
-                {SHAPES.map((s) => (
-                  <Tile key={s} active={s === shape} label={t(`shape.${s}` as Key)} onClick={() => setShape(s)}>
-                    <PinguAvatar size={46} shape={s} color={color} state="idle" animated={false} className={outline} />
-                  </Tile>
-                ))}
-              </div>
-            </Section>
-            <Section title={t("studio.expression")}>
-              <div className="grid grid-cols-4 gap-1">
-                {EXPRESSIONS.map((e) => (
-                  <Tile
-                    key={e}
-                    active={!live && e === expression}
-                    label={t(`expr.${e}` as Key)}
-                    onClick={() => {
-                      setLive(null);
-                      setExpression(e);
-                    }}
-                  >
-                    <PinguAvatar size={46} shape={shape} color={color} state={e} animated={false} className={outline} />
-                  </Tile>
-                ))}
-              </div>
-            </Section>
-            <Section title={t("studio.colour")}>
-              <div className="grid grid-cols-6 gap-3">
-                {COLORS.map((c) => (
-                  <button
-                    key={c.hex}
-                    onClick={() => setColor(c.hex)}
-                    className={`size-11 rounded-full border border-st-line transition ${
-                      c.hex === color ? "ring-2 ring-st-selected ring-offset-[3px] ring-offset-st-bg" : "hover:scale-105"
-                    }`}
-                    style={{
-                      // border-box: from the padding box, the gradient repeats under the border as slivers.
-                      background: c.hex === PINGU_AUTO ? "linear-gradient(90deg, #0b0b0b 50%, #f7f7f4 50%) border-box" : c.hex,
-                    }}
-                    aria-label={t(c.label)}
-                    aria-pressed={c.hex === color}
-                    title={t(c.label)}
-                  />
-                ))}
-              </div>
-            </Section>
-          </>
-        )}
+        {/* Keyed by tab: each tab's sections rise in (.tab-panel in globals.css). */}
+        <div key={tab} className="tab-panel">
+          {tab === "style" && (
+            <>
+              <Section title={t("studio.shape")}>
+                <div className="grid grid-cols-4 gap-1">
+                  {SHAPES.map((s) => (
+                    <Tile key={s} active={s === shape} label={t(`shape.${s}` as Key)} onClick={() => setShape(s)}>
+                      <PinguAvatar size={46} shape={s} color={color} state="idle" animated={false} className={outline} />
+                    </Tile>
+                  ))}
+                </div>
+              </Section>
+              <Section title={t("studio.expression")}>
+                <div className="grid grid-cols-4 gap-1">
+                  {EXPRESSIONS.map((e) => (
+                    <Tile
+                      key={e}
+                      active={!live && e === expression}
+                      label={t(`expr.${e}` as Key)}
+                      onClick={() => {
+                        setLive(null);
+                        setExpression(e);
+                      }}
+                    >
+                      <PinguAvatar size={46} shape={shape} color={color} state={e} animated={false} className={outline} />
+                    </Tile>
+                  ))}
+                </div>
+              </Section>
+              <Section title={t("studio.colour")}>
+                <div className="grid grid-cols-6 gap-3">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c.hex}
+                      onClick={() => setColor(c.hex)}
+                      className={`size-11 rounded-full border border-st-line transition ${
+                        c.hex === color ? "ring-2 ring-st-selected ring-offset-[3px] ring-offset-st-bg" : "hover:scale-105"
+                      }`}
+                      style={{
+                        // border-box: from the padding box, the gradient repeats under the border as slivers.
+                        background: c.hex === PINGU_AUTO ? "linear-gradient(90deg, #0b0b0b 50%, #f7f7f4 50%) border-box" : c.hex,
+                      }}
+                      aria-label={t(c.label)}
+                      aria-pressed={c.hex === color}
+                      title={t(c.label)}
+                    />
+                  ))}
+                </div>
+              </Section>
+            </>
+          )}
 
-        {tab === "motion" && (
-          <>
-            <Section title={t("studio.animation")}>
-              <div className="grid grid-cols-4 gap-1">
-                {ANIMATIONS.map((a) => (
-                  <Tile key={a.id} active={activeAnim?.id === a.id} label={t(a.label)} onClick={() => addClip(a.id)}>
-                    <PinguAvatar size={46} shape={a.shape ?? shape} color={color} state={a.state} animated={false} className={outline} />
-                  </Tile>
-                ))}
-              </div>
-            </Section>
-            <Section title={t("studio.talk")}>
-              <div className="flex gap-2">
-                <input
-                  value={line ?? t("studio.talkLine")}
-                  onChange={(e) => setLine(e.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-st-line bg-st-surface px-3 py-2 text-[14px] text-st-ink focus:border-st-line-strong focus:outline-none"
-                />
-                <Pill onClick={talk}>{t("studio.talkButton")}</Pill>
-              </div>
-            </Section>
-          </>
-        )}
-
-        {tab === "settings" && (
-          <>
-            <Section title={t("studio.language")}>
-              <div className="flex flex-col gap-2">
-                {LANGS.map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => setLang(l.id)}
-                    className={`flex h-12 items-center gap-3 rounded-xl border px-4 text-left text-[15px] transition ${
-                      l.id === lang
-                        ? "border-st-selected bg-st-surface text-st-ink"
-                        : "border-st-line bg-st-surface text-st-muted hover:border-st-line-strong hover:text-st-ink"
-                    }`}
-                    aria-pressed={l.id === lang}
-                    lang={l.id}
-                  >
-                    <span className="text-[17px] leading-none">{l.flag}</span>
-                    <span className="flex-1">{l.label}</span>
-                    {l.id === lang && (
-                      <Check size={16} weight="bold" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </Section>
-            <Section title={t("studio.pose")}>
-              <Toggle checked={pinPose} onChange={setPinPose} label={t("studio.pinPose")} />
-              {(["turn", "tilt", "roll"] as const).map((k) => (
-                <label key={k} className="mt-3 flex items-center gap-3 text-[14px] text-st-muted">
-                  <span className="w-24">{t(`studio.${k}` as Key)}</span>
+          {tab === "motion" && (
+            <>
+              <Section title={t("studio.animation")}>
+                <div className="grid grid-cols-4 gap-1">
+                  {ANIMATIONS.map((a) => (
+                    <Tile key={a.id} active={activeAnim?.id === a.id} label={t(a.label)} onClick={() => addClip(a.id)}>
+                      <PinguAvatar size={46} shape={a.shape ?? shape} color={color} state={a.state} animated={false} className={outline} />
+                    </Tile>
+                  ))}
+                </div>
+              </Section>
+              <Section title={t("studio.talk")}>
+                <div className="flex gap-2">
                   <input
-                    type="range"
-                    min={k === "turn" ? -100 : -40}
-                    max={k === "turn" ? 100 : 40}
-                    value={pose[k]}
-                    onChange={(e) => {
-                      setPinPose(true);
-                      setPose((p) => ({ ...p, [k]: Number(e.target.value) }));
-                    }}
-                    className="flex-1 accent-st-accent"
+                    value={line ?? t("studio.talkLine")}
+                    onChange={(e) => setLine(e.target.value)}
+                    className="min-w-0 flex-1 rounded-xl border border-st-line bg-st-surface px-3 py-2 text-[14px] text-st-ink focus:border-st-line-strong focus:outline-none"
                   />
-                  <span className="w-9 text-right tabular-nums">{pose[k]}</span>
-                </label>
-              ))}
-            </Section>
-            <Section title={t("studio.behaviour")}>
-              <Toggle checked={follow} onChange={setFollow} label={t("studio.follow")} />
-              <Toggle checked={doze} onChange={setDoze} label={t("studio.doze")} />
-            </Section>
-            <Section title={t("studio.export")}>
-              <Toggle checked={transparent} onChange={setTransparent} label={t("studio.transparent")} />
-            </Section>
-            <Section title={t("studio.about")}>
-              <p className="text-[14px] text-st-muted">
-                {t("studio.madeWith", { heart: "❤️" })}{" "}
-                <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="font-medium text-st-ink underline-offset-4 hover:underline">
-                  Gabriel Spicuglia
+                  <Pill onClick={talk}>{t("studio.talkButton")}</Pill>
+                </div>
+              </Section>
+            </>
+          )}
+
+          {tab === "settings" && (
+            <>
+              <Section title={t("studio.language")}>
+                <div className="flex flex-col gap-2">
+                  {LANGS.map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => {
+                        play("tap");
+                        setLang(l.id);
+                      }}
+                      className={`flex h-12 items-center gap-3 rounded-xl border px-4 text-left text-[15px] transition ${
+                        l.id === lang
+                          ? "border-st-selected bg-st-surface text-st-ink"
+                          : "border-st-line bg-st-surface text-st-muted hover:border-st-line-strong hover:text-st-ink"
+                      }`}
+                      aria-pressed={l.id === lang}
+                      lang={l.id}
+                    >
+                      <span className="text-[17px] leading-none">{l.flag}</span>
+                      <span className="flex-1">{l.label}</span>
+                      {l.id === lang && (
+                        <Check size={16} weight="bold" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </Section>
+              <Section title={t("studio.sound")}>
+                <Toggle checked={sound} onChange={setSoundOn} label={t("studio.soundToggle")} />
+              </Section>
+              <Section title={t("studio.pose")}>
+                <Toggle checked={pinPose} onChange={setPinPose} label={t("studio.pinPose")} />
+                {(["turn", "tilt", "roll"] as const).map((k) => (
+                  <label key={k} className="mt-3 flex items-center gap-3 text-[14px] text-st-muted">
+                    <span className="w-24">{t(`studio.${k}` as Key)}</span>
+                    <input
+                      type="range"
+                      min={k === "turn" ? -100 : -40}
+                      max={k === "turn" ? 100 : 40}
+                      value={pose[k]}
+                      onChange={(e) => {
+                        setPinPose(true);
+                        setPose((p) => ({ ...p, [k]: Number(e.target.value) }));
+                      }}
+                      className="flex-1 accent-st-accent"
+                    />
+                    <span className="w-9 text-right tabular-nums">{pose[k]}</span>
+                  </label>
+                ))}
+              </Section>
+              <Section title={t("studio.behaviour")}>
+                <Toggle checked={follow} onChange={setFollow} label={t("studio.follow")} />
+                <Toggle checked={doze} onChange={setDoze} label={t("studio.doze")} />
+              </Section>
+              <Section title={t("studio.export")}>
+                <Toggle checked={transparent} onChange={setTransparent} label={t("studio.transparent")} />
+              </Section>
+              <Section title={t("studio.about")}>
+                <p className="text-[14px] text-st-muted">
+                  {t("studio.madeWith", { heart: "❤️" })}{" "}
+                  <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="font-medium text-st-ink underline-offset-4 hover:underline">
+                    Gabriel Spicuglia
+                  </a>
+                </p>
+                <a
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 text-[14px] font-medium text-st-ink underline-offset-4 hover:underline"
+                >
+                  <GithubLogo size={18} weight="fill" />
+                  {t("chat.github")}
                 </a>
-              </p>
-              <a
-                href={GITHUB_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-2 text-[14px] font-medium text-st-ink underline-offset-4 hover:underline"
-              >
-                <GithubLogo size={18} weight="fill" />
-                {t("chat.github")}
-              </a>
-              <p className="mt-3 text-[13px] leading-5 text-st-muted">{t("studio.disclaimer")}</p>
-            </Section>
-          </>
-        )}
+                <p className="mt-3 text-[13px] leading-5 text-st-muted">{t("studio.disclaimer")}</p>
+              </Section>
+            </>
+          )}
+        </div>
       </aside>
 
       {dialog && <MontageDialog busy={busy} progress={progress} onCancel={() => setDialog(false)} onDownload={exportMontage} />}
@@ -629,7 +655,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Tile({ active, label, onClick, children }: { active: boolean; label: string; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => {
+        play("tap");
+        onClick();
+      }}
       className={`flex flex-col items-center gap-1.5 rounded-[14px] border-2 px-1 pb-2 pt-3 transition ${
         active ? "border-st-selected" : "border-transparent hover:bg-st-hover"
       }`}
@@ -644,7 +673,10 @@ function Tile({ active, label, onClick, children }: { active: boolean; label: st
 function Pill({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => {
+        play("tap");
+        onClick();
+      }}
       className="h-9 shrink-0 rounded-full border border-st-line bg-st-surface px-4 text-[14px] text-st-ink-2 transition hover:border-st-line-strong"
     >
       {children}
@@ -654,7 +686,12 @@ function Pill({ onClick, children }: { onClick: () => void; children: React.Reac
 
 function MenuItem({ icon, onClick, children }: { icon: React.ReactNode; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-st-ink hover:bg-st-hover">
+    <button
+      onClick={() => {
+        play("tap");
+        onClick();
+      }}
+      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-st-ink hover:bg-st-hover">
       <span className="text-st-muted">{icon}</span>
       {children}
     </button>
@@ -669,7 +706,11 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
         type="button"
         role="switch"
         aria-checked={checked}
-        onClick={() => onChange(!checked)}
+        // After onChange, so switching the sound itself on is heard (and switching it off is not).
+        onClick={() => {
+          onChange(!checked);
+          play(checked ? "off" : "on");
+        }}
         className={`relative h-6 w-10 rounded-full transition ${checked ? "bg-st-accent" : "bg-st-track"}`}
       >
         <span className={`absolute top-0.5 size-5 rounded-full bg-st-knob shadow transition-all ${checked ? "left-[18px]" : "left-0.5"}`} />

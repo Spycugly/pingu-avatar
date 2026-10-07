@@ -1,10 +1,22 @@
-let ctx: AudioContext | null = null;
+import { audio } from "./sound";
 
 /** Two short brassy honks, synthesized: "noot noot". */
 export function noot() {
+  const ac = audio();
+  if (!ac) return;
+  if (ac.state === "running") return honk(ac);
+  // Not unlocked yet. During a click it unlocks within a few milliseconds: honk then. Without a
+  // gesture the resume settles late or never, and a late honk would be out of place.
+  const asked = performance.now();
+  ac.resume()
+    .then(() => {
+      if (performance.now() - asked < 300) honk(ac);
+    })
+    .catch(() => {});
+}
+
+function honk(ac: AudioContext) {
   try {
-    ctx ??= new AudioContext();
-    const ac = ctx;
     const now = ac.currentTime;
     [0, 0.22].forEach((offset) => {
       const osc = ac.createOscillator();

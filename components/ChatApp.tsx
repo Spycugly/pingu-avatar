@@ -11,6 +11,7 @@ import AgentAvatar from "./AgentAvatar";
 import NavRail, { useTheme } from "./NavRail";
 import { useI18n } from "@/lib/i18n";
 import { GITHUB_URL } from "@/lib/links";
+import { play } from "@/lib/sound";
 import ChatPane from "./ChatPane";
 import Tooltip from "./Tooltip";
 
@@ -105,7 +106,10 @@ export default function ChatApp() {
                 listening={listening && agent.id === activeId}
                 flourish={chat.flourish[agent.id]?.state}
                 unread={!!chat.unread[agent.id]}
-                onClick={() => open(agent.id)}
+                onClick={() => {
+                  if (agent.id !== activeId) play("tap");
+                  open(agent.id);
+                }}
               />
             ))}
             {agents.length === 0 && (
@@ -137,15 +141,24 @@ export default function ChatApp() {
         />
       </div>
 
-      {/* Same style as the GitHub link in the studio's Info section. */}
+      {/* Footer links: no underline, they fade on hover instead. */}
       <a
         href={GITHUB_URL}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-5 items-center gap-2 text-[14px] font-medium text-gb-text underline-offset-4 hover:underline"
+        className="inline-flex h-5 items-center gap-2 text-[14px] font-medium text-gb-text transition-opacity duration-200 hover:opacity-60"
       >
         <GithubLogo size={18} weight="fill" />
         {t("chat.github")}
+      </a>
+      {/* Credit for the chat's layout, which follows Grok Bot (see Credits in the README). */}
+      <a
+        href="https://x.ai/bot"
+        target="_blank"
+        rel="noreferrer"
+        className="-mt-1 px-5 text-center text-[12px] leading-4 text-gb-side-2 transition-colors duration-200 hover:text-gb-text md:-mt-2"
+      >
+        {t("chat.credit")}
       </a>
     </main>
   );

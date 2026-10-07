@@ -17,6 +17,7 @@
   --gb-side-1: rgba(255, 255, 255, 0.9);
   --gb-side-2: rgba(255, 255, 255, 0.55);
   --gb-side-3: rgba(255, 255, 255, 0.32);
+  --gb-danger: #ff453a;
   --gb-selected: rgba(255, 255, 255, 0.075);
   --gb-hover: rgba(255, 255, 255, 0.05);
   --gb-border: rgba(255, 255, 255, 0.12);
@@ -51,6 +52,7 @@
   --gb-side-1: rgba(0, 0, 0, 0.88);
   --gb-side-2: rgba(0, 0, 0, 0.55);
   --gb-side-3: rgba(0, 0, 0, 0.36);
+  --gb-danger: #e5332a;
   --gb-selected: #efefef;
   --gb-hover: rgba(0, 0, 0, 0.035);
   --gb-border: #e2e2e2;
@@ -81,6 +83,7 @@
   --color-gb-side-1: var(--gb-side-1);
   --color-gb-side-2: var(--gb-side-2);
   --color-gb-side-3: var(--gb-side-3);
+  --color-gb-danger: var(--gb-danger);
   --color-gb-selected: var(--gb-selected);
   --color-gb-hover: var(--gb-hover);
   --color-gb-border: var(--gb-border);
@@ -215,6 +218,19 @@ html[data-theme="light"] body {
   to { opacity: 1; transform: none; filter: none; }
 }
 
+/* Studio tab switch: the new tab's sections rise in one after another. Starts at a low opacity, not
+   zero, so the panel never shows an empty frame. */
+.tab-panel > * {
+  animation: tab-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.tab-panel > :nth-child(2) { animation-delay: 30ms; }
+.tab-panel > :nth-child(3) { animation-delay: 60ms; }
+.tab-panel > :nth-child(4) { animation-delay: 90ms; }
+.tab-panel > :nth-child(n + 5) { animation-delay: 120ms; }
+@keyframes tab-in {
+  from { opacity: 0.15; transform: translateY(8px); }
+}
+
 /* Route change (studio <-> chat): React's <ViewTransition> cross-fades the pages, with no empty
    frame in between, while the rail (same name on both pages) stays put above them. */
 ::view-transition-old(.page-swap) {
@@ -258,6 +274,9 @@ html[data-theme="light"] body {
   .wiggle {
     animation-duration: 0.001s !important;
     animation-iteration-count: 1 !important;
+  }
+  .tab-panel > * {
+    animation: none;
   }
 }
 

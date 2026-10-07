@@ -12,16 +12,16 @@ const FIT = 0.9;
 /** Fill per heart: the outline follows the theme, the filled heart keeps the video's pink. */
 const HEART_FILLS = ["var(--intro-line)", "#e7007d"];
 
-/** Once per page load: client-side navigation back to the home page does not replay it. */
+/** Once per page load, shared by every page: client-side navigation between them does not replay it. */
 let played = false;
 
-/** True when this page load landed on the home page. Opening the editor from the chat is a
-    client-side navigation from /chat and must not play the intro over it. (During that render
-    location.pathname still reads /chat, so compare with the home path itself.) */
-function landedHere() {
+/** True when this page load landed on `path`. Moving between the studio and the chat is a
+    client-side navigation and must not play the intro over it. (During that render
+    location.pathname still reads the previous page, so compare with the page's own path.) */
+function landedOn(path: string) {
   if (typeof window === "undefined") return true;
   const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-  return !nav || new URL(nav.name).pathname === "/";
+  return !nav || new URL(nav.name).pathname === path;
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -39,8 +39,8 @@ function heartAt(f: number) {
 }
 
 /** Opening animation: the traced intro loop (lib/intro-frames.ts) replayed frame by frame, with the five shapes recast as Pingus. */
-export default function IntroSplash() {
-  const [phase, setPhase] = useState<"play" | "fade" | "done">(() => (played || !landedHere() ? "done" : "play"));
+export default function IntroSplash({ path }: { /** The page's own route, e.g. "/" or "/chat". */ path: string }) {
+  const [phase, setPhase] = useState<"play" | "fade" | "done">(() => (played || !landedOn(path) ? "done" : "play"));
   /** Eyelids change a handful of times per loop, so they go through React; motion does not. */
   const [lids, setLids] = useState("1,1,1,1,1");
   const hearts = useRef<(SVGPathElement | null)[]>([]);

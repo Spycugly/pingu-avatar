@@ -6,6 +6,7 @@ import { flushSync } from "react-dom";
 import { ChatCircle, FilmSlate, GearSix, Moon, Palette, Sun, type Icon } from "@phosphor-icons/react";
 import Tooltip from "./Tooltip";
 import { useI18n, type Key } from "@/lib/i18n";
+import { play } from "@/lib/sound";
 
 /* The floating rail shared by the studio (home page) and the chat, identical on both: the chat
    first, then the studio tabs and the theme switch. In the chat every studio item links
@@ -63,14 +64,13 @@ const ITEMS: RailItem[] = ["chat", "style", "motion", "settings"];
     starts its highlight there and slides it to the new item. */
 let lastActive: RailItem | null = null;
 
-const itemClass = (active: boolean) =>
-  `relative z-[1] grid size-11 place-items-center rounded-xl transition-colors duration-300 ${
-    active ? "text-st-accent-ink" : "text-st-muted hover:bg-st-hover hover:text-st-ink"
-  }`;
+/** Every item is drawn muted: the active colours come from the highlight layer above it. */
+const itemClass =
+  "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-300 hover:bg-st-hover hover:text-st-ink";
 
 /** Sun and moon share one cell and swap with a turn and a fade. */
 const swap = (shown: boolean) =>
-  `[grid-area:1/1] transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
+  `[grid-area:1/1] transition-[opacity,rotate,scale] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
     shown ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"
   }`;
 
@@ -96,11 +96,14 @@ export default function NavRail({
 }) {
   const { t } = useI18n();
   const navRef = useRef<HTMLElement>(null);
-  const pillRef = useRef<HTMLSpanElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
   const placed = useRef(false);
 
-  // The active highlight is one pill that slides between items, measured from the DOM so it
-  // follows the rail's orientation and gaps at every breakpoint.
+  // The active highlight is one layer over the whole rail: the accent fill plus a copy of every
+  // icon in the accent ink, clipped to the active item. Sliding the clip moves the fill and
+  // recolours each icon exactly where the highlight covers it, instead of each icon fading on
+  // its own clock (dark ink on the dark rail for a moment). Measured from the DOM so it follows
+  // the rail's orientation and gaps at every breakpoint.
   useLayoutEffect(() => {
     const nav = navRef.current;
     const pill = pillRef.current;
@@ -108,8 +111,16 @@ export default function NavRail({
     const place = (item: RailItem, animate: boolean) => {
       const el = nav.querySelector<HTMLElement>(`[data-rail="${item}"]`);
       if (!el) return;
+      for (const ink of pill.querySelectorAll<HTMLElement>("[data-ink]")) {
+        const at = nav.querySelector<HTMLElement>(`[data-rail="${ink.dataset.ink}"]`);
+        if (at) ink.style.transform = `translate(${at.offsetLeft}px, ${at.offsetTop}px)`;
+      }
+      const top = el.offsetTop;
+      const left = el.offsetLeft;
+      const right = nav.clientWidth - left - el.offsetWidth;
+      const bottom = nav.clientHeight - top - el.offsetHeight;
       pill.style.transition = animate ? "" : "none";
-      pill.style.transform = `translate(${el.offsetLeft}px, ${el.offsetTop}px)`;
+      pill.style.clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round 12px)`;
       pill.style.opacity = "1";
     };
     const from = placed.current ? null : lastActive;
@@ -142,12 +153,6 @@ export default function NavRail({
         className={`relative z-10 flex gap-1 rounded-2xl min-[400px]:gap-2 bg-st-surface p-2 shadow-[var(--st-shadow)] transition-[background-color,box-shadow] duration-300 ${className}`}
         aria-label="Pingu"
       >
-        <span
-          ref={pillRef}
-          aria-hidden
-          className="pointer-events-none absolute left-0 top-0 size-11 rounded-xl bg-st-accent opacity-0 transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none"
-        />
-
         {ITEMS.map((item) => {
           const label = t(LABELS[item]);
           const isActive = item === active;
@@ -157,7 +162,13 @@ export default function NavRail({
             const href = item === "chat" ? "/chat" : `/?tab=${item}`;
             return (
               <div key={item} data-rail={item} className="group relative">
-                <Link href={href} className={itemClass(isActive)} aria-label={label} aria-current={isActive ? "page" : undefined}>
+                <Link
+                  href={href}
+                  onClick={() => !isActive && play("slide")}
+                  className={itemClass}
+                  aria-label={label}
+                  aria-current={isActive ? "page" : undefined}
+                >
                   {icon}
                 </Link>
                 {tip(label)}
@@ -166,7 +177,15 @@ export default function NavRail({
           }
           return (
             <div key={item} data-rail={item} className="group relative">
-              <button onClick={() => onTab(item)} className={itemClass(isActive)} aria-label={label} aria-pressed={isActive}>
+              <button
+                onClick={() => {
+                  if (!isActive) play("slide");
+                  onTab(item);
+                }}
+                className={itemClass}
+                aria-label={label}
+                aria-pressed={isActive}
+              >
                 {icon}
               </button>
               {tip(label)}
@@ -182,8 +201,11 @@ export default function NavRail({
                 type="button"
                 role="switch"
                 aria-checked={theme === "dark"}
-                onClick={() => onTheme(theme === "dark" ? "light" : "dark")}
-                className={itemClass(false)}
+                onClick={() => {
+                  play(theme === "dark" ? "on" : "off");
+                  onTheme(theme === "dark" ? "light" : "dark");
+                }}
+                className={itemClass}
                 aria-label={theme === "dark" ? t("nav.toLight") : t("nav.toDark")}
               >
                 <Sun size={20} weight="fill" className={swap(theme === "dark")} />
@@ -193,6 +215,21 @@ export default function NavRail({
             </div>
           </>
         )}
+
+        <div
+          ref={pillRef}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-st-accent text-st-accent-ink opacity-0 transition-[clip-path,background-color,color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none"
+        >
+          {ITEMS.map((item) => {
+            const ItemIcon = ICONS[item];
+            return (
+              <span key={item} data-ink={item} className="absolute left-0 top-0 grid size-11 place-items-center">
+                <ItemIcon size={20} weight="fill" />
+              </span>
+            );
+          })}
+        </div>
       </nav>
     </ViewTransition>
   );

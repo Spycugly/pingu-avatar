@@ -5,6 +5,7 @@ import { AGENTS, getAgent } from "@/lib/agents";
 import { getPinguReply, greetingLine, lineForItalian, lineText, RESET_LINE } from "@/lib/pingu-brain";
 import type { Lang } from "@/lib/i18n";
 import { noot } from "@/lib/noot";
+import { setSoundOn, soundOn, useSoundOn } from "@/lib/sound";
 import type { EngineState } from "@/avatar";
 
 export type Status = "idle" | "thinking" | "talking";
@@ -92,17 +93,14 @@ export function useChat() {
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [unread, setUnread] = useState<Record<string, boolean>>({});
   const [flourish, setFlourish] = useState<Record<string, Flourish | undefined>>({});
-  const [sound, setSound] = useState(() => {
-    try {
-      return localStorage.getItem("pingu-sound") === "on";
-    } catch {
-      return false;
-    }
-  });
+  // The app-wide sound setting (lib/sound.ts): the noot noot and the interface sounds.
+  const sound = useSoundOn();
+  const setSound = useCallback((next: boolean | ((on: boolean) => boolean)) => {
+    setSoundOn(typeof next === "function" ? next(soundOn()) : next);
+  }, []);
 
   const threadsRef = useRef(threads);
   const activeRef = useRef<string>("pingu");
-  const soundRef = useRef(sound);
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
@@ -111,13 +109,6 @@ export function useChat() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(threads));
     } catch {}
   }, [threads]);
-
-  useEffect(() => {
-    soundRef.current = sound;
-    try {
-      localStorage.setItem("pingu-sound", sound ? "on" : "off");
-    } catch {}
-  }, [sound]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
@@ -177,7 +168,7 @@ export function useChat() {
       }));
       setStatus((s) => ({ ...s, [agentId]: "talking" }));
       if (activeRef.current !== agentId) setUnread((u) => ({ ...u, [agentId]: true }));
-      if (soundRef.current) noot();
+      if (soundOn()) noot();
       if (reaction) react(agentId, REACTION_FLOURISH[reaction] ?? "celebrate");
     }, delay);
     timers.current.push(timer);

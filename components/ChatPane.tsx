@@ -5,6 +5,7 @@ import { ArrowUp, CaretLeft, Microphone, Plus, SpeakerHigh, SpeakerSlash } from 
 import { getAgent, SUGGESTIONS, THINKING_BEATS, type Agent } from "@/lib/agents";
 import { emitPingu, PinguAvatar, syllableFor, type EngineState } from "@/avatar";
 import { noot } from "@/lib/noot";
+import { play } from "@/lib/sound";
 import { dayTime } from "@/lib/time";
 import { useI18n, type Key } from "@/lib/i18n";
 import { messageText, type Message, type Status } from "@/hooks/useChat";
@@ -123,12 +124,29 @@ export default function ChatPane({
         </div>
         <div className="group relative ml-auto">
           <button
-            onClick={onToggleSound}
+            // Turning sound on honks once: proof that it works, and the click unlocks the audio.
+            onClick={() => {
+              if (!sound) noot();
+              onToggleSound();
+            }}
             className={`grid size-6 place-items-center rounded-[6px] transition hover:bg-gb-hover ${sound ? "text-gb-text" : "text-gb-text-2"}`}
             aria-label={sound ? t("chat.soundOff") : t("chat.soundOn")}
             aria-pressed={sound}
           >
-            {sound ? <SpeakerHigh size={15} weight="fill" /> : <SpeakerSlash size={15} weight="fill" />}
+            {sound ? (
+              <SpeakerHigh size={15} weight="fill" />
+            ) : (
+              <span className="grid">
+                <SpeakerSlash size={15} weight="fill" className="[grid-area:1/1]" />
+                {/* Phosphor draws the slash in the same path as the speaker: a red copy clipped to a
+                    band along the slash (48,40 → 208,216 in the 256 grid) colours the slash alone. */}
+                <SpeakerSlash
+                  size={15}
+                  weight="fill"
+                  className="text-gb-danger [clip-path:polygon(18.05%_9.92%,86.88%_85.63%,81.95%_90.08%,13.13%_14.38%)] [grid-area:1/1]"
+                />
+              </span>
+            )}
           </button>
           {/* Below the button and right-aligned, so it stays inside the pane. */}
           <Tooltip
@@ -384,6 +402,7 @@ function Composer({
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     if (busy || !text.trim()) return;
+    play("send");
     onSend(text);
     setText("");
     onTyping(false);
