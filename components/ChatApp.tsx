@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { addTransitionType, startTransition, useEffect, useState, ViewTransition } from "react";
+import { addTransitionType, startTransition, useEffect, useRef, useState, ViewTransition } from "react";
 import { GithubLogo, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { AGENTS, getAgent } from "@/lib/agents";
 import { shortTime } from "@/lib/time";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { messageText, useChat, type Message, type Status } from "@/hooks/useChat";
 import { emitPingu, type EngineState, type PinguEvent } from "@/avatar";
 import AgentAvatar from "./AgentAvatar";
@@ -38,6 +39,30 @@ export default function ChatApp() {
     });
   };
 
+  // Phones: inside a conversation, dragging it to the right goes back to the list underneath.
+  const paneRef = useRef<HTMLElement>(null);
+  const listRef = useRef<HTMLElement>(null);
+  const [peek, setPeek] = useState(false);
+  useSwipeBack({
+    pane: paneRef,
+    under: listRef,
+    active: mobileView === "chat",
+    paneKey: activeId,
+    onPeek: setPeek,
+    onBack: () => setMobileView("list"),
+  });
+
+  // The body shows around the page when it bounces past its ends: give it the page's colour.
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return;
+    document.body.style.backgroundColor = getComputedStyle(main).backgroundColor;
+    return () => {
+      document.body.style.backgroundColor = "";
+    };
+  }, [mobileView, theme]);
+
   const open = (id: string) =>
     slide("chat-push", () => {
       setActiveId(id);
@@ -50,8 +75,13 @@ export default function ChatApp() {
 
   return (
     <main
+      ref={mainRef}
       data-theme={theme}
-      className="chat relative flex min-h-dvh flex-col items-center justify-center bg-gb-page text-gb-text md:gap-6 md:p-6"
+      // Phones: the page takes the colour of the screen on show (the list's, or the conversation's), so the
+      // edges and the overscroll bounce blend in.
+      className={`chat relative flex min-h-dvh flex-col items-center justify-center text-gb-text md:gap-6 md:bg-gb-page md:p-6 ${
+        mobileView === "chat" ? "bg-gb-main" : "bg-gb-sidebar"
+      }`}
     >
       {/* The studio's rail, identical: the theme (picked in the studio) is shared with it
           and drives the chat's own light/dark tokens. A tab bar at the bottom on phones (hidden inside a
@@ -65,10 +95,12 @@ export default function ChatApp() {
         />
       </div>
       <ViewTransition update={{ "chat-push": "chat-push", "chat-pop": "chat-pop", default: "none" }}>
-        <div className="flex h-dvh w-full overflow-hidden bg-gb-main md:h-[660px] md:max-h-[calc(100dvh-176px)] md:w-[976px] md:rounded-[24px] md:ring-1 md:ring-gb-ring min-[1180px]:max-h-[calc(100dvh-92px)]">
+        <div className="relative flex h-dvh w-full overflow-hidden bg-gb-main md:h-[660px] md:max-h-[calc(100dvh-176px)] md:w-[976px] md:rounded-[24px] md:ring-1 md:ring-gb-ring min-[1180px]:max-h-[calc(100dvh-92px)]">
           {/* Sidebar */}
           <aside
-            className={`${mobileView === "list" ? "flex" : "hidden"} w-full flex-col bg-gb-sidebar pt-[env(safe-area-inset-top)] pb-[calc(max(12px,env(safe-area-inset-bottom))+70px)] md:flex md:pt-0 md:pb-0 md:w-[280px] md:shrink-0 md:border-r md:border-gb-divider`}
+            ref={listRef}
+            // While a swipe back runs, the list lies under the conversation (see useSwipeBack).
+            className={`${mobileView === "list" || peek ? "flex" : "hidden"} ${peek ? "absolute inset-0" : ""} w-full flex-col bg-gb-sidebar pt-[env(safe-area-inset-top)] pb-[calc(max(12px,env(safe-area-inset-bottom))+70px)] md:flex md:pt-0 md:pb-0 md:w-[280px] md:shrink-0 md:border-r md:border-gb-divider`}
           >
             <div className="flex h-[44px] shrink-0 items-center justify-between pl-4 pr-[10px]">
               <div className="flex w-[52px] gap-2" aria-hidden>
@@ -147,7 +179,8 @@ export default function ChatApp() {
           {/* Chat */}
           <ChatPane
             key={activeId}
-            className={`${mobileView === "chat" ? "flex" : "hidden"} md:flex`}
+            ref={paneRef}
+            className={`${mobileView === "chat" ? "flex" : "hidden"} ${peek ? "z-10" : ""} md:flex`}
             agentId={activeId}
             messages={chat.threads[activeId]}
             status={chat.status[activeId] ?? "idle"}

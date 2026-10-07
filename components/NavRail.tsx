@@ -80,9 +80,11 @@ const ITEMS: RailItem[] = ["chat", "style", "motion", "settings"];
     starts its highlight there and slides it to the new item. */
 let lastActive: RailItem | null = null;
 
-/** Every item is drawn muted: the active colours come from the highlight layer above it. */
+/** Every item is drawn muted: the active colours come from the highlight layer above it. On phones the
+    corners are concentric, as Apple draws them: a 54px item is a full 27px capsule, and the bar's 31px
+    radius is that plus its 4px padding. */
 const itemClass =
-  "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-150 hover:bg-st-hover hover:text-st-ink max-md:flex max-md:h-[54px] max-md:w-full max-md:flex-col max-md:justify-center max-md:gap-0.5 max-md:rounded-[22px] max-md:hover:bg-transparent";
+  "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-150 hover:bg-st-hover hover:text-st-ink max-md:flex max-md:h-[54px] max-md:w-full max-md:flex-col max-md:justify-center max-md:gap-0.5 max-md:rounded-[27px] max-md:hover:bg-transparent";
 
 /** An item's icon and, on phones, its label: drawn twice, muted below and in the highlight's ink above. */
 function ItemFace({ item, label }: { item: RailItem; label: string }) {
@@ -173,7 +175,7 @@ export default function NavRail({
     <ViewTransition name="nav-rail" share="rail-anchor" default="none">
       <nav
         ref={navRef}
-        className={`relative z-10 flex gap-1 rounded-2xl min-[400px]:gap-2 bg-st-surface p-2 shadow-[var(--st-shadow)] transition-[background-color,box-shadow] duration-300 max-md:fixed max-md:inset-x-4 max-md:bottom-[max(12px,env(safe-area-inset-bottom))] max-md:z-40 max-md:mx-auto max-md:max-w-[440px] max-md:gap-0 max-md:rounded-[30px] max-md:bg-st-surface/75 max-md:p-1 max-md:ring-[0.5px] max-md:ring-st-line max-md:backdrop-blur-xl max-md:backdrop-saturate-150 ${
+        className={`relative z-10 flex gap-1 rounded-2xl min-[400px]:gap-2 bg-st-surface p-2 shadow-[var(--st-shadow)] transition-[background-color,box-shadow] duration-300 max-md:fixed max-md:inset-x-4 max-md:bottom-[max(12px,env(safe-area-inset-bottom))] max-md:z-40 max-md:mx-auto max-md:max-w-[440px] max-md:gap-0 max-md:rounded-[31px] max-md:bg-st-surface/75 max-md:p-1 max-md:ring-[0.5px] max-md:ring-st-line max-md:backdrop-blur-xl max-md:backdrop-saturate-150 ${
           hideOnMobile ? "max-md:hidden" : ""
         } ${className}`}
         aria-label="Pingu"

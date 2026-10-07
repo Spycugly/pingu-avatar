@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type Ref } from "react";
 import { ArrowUp, CaretLeft, Microphone, Plus, SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
 import { getAgent, SUGGESTIONS, THINKING_BEATS, type Agent } from "@/lib/agents";
 import { emitPingu, PinguAvatar, syllableFor, type EngineState } from "@/avatar";
@@ -20,6 +20,8 @@ type Props = {
   flourish?: EngineState;
   sound: boolean;
   className?: string;
+  /** The pane's section, for the phone swipe-back gesture. */
+  ref?: Ref<HTMLElement>;
   onToggleSound: () => void;
   onListening: (listening: boolean) => void;
   onReact: (state: EngineState, ms?: number) => void;
@@ -39,6 +41,7 @@ export default function ChatPane({
   flourish,
   sound,
   className = "",
+  ref,
   onToggleSound,
   onListening,
   onReact,
@@ -68,17 +71,48 @@ export default function ChatPane({
     return () => clearTimeout(t);
   }, [linger]);
 
-  // Stick to the bottom as messages arrive and the typewriter grows them.
+  // Stick to the bottom as messages arrive and the typewriter grows them, but only while the reader
+  // is at the bottom: someone scrolling back through older messages is left where they are.
+  const pin = useRef(() => {});
   useEffect(() => {
     const scroller = scrollRef.current;
     const content = contentRef.current;
     if (!scroller || !content) return;
-    const toBottom = () => scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    let pinned = true;
+    /** When we last scrolled on our own: the smooth scroll's events must not count as the reader's. */
+    let auto = 0;
+    const toBottom = () => {
+      if (!pinned) return;
+      auto = performance.now();
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    };
+    const onScroll = () => {
+      if (performance.now() - auto < 700) return;
+      pinned = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
+    };
+    // A finger or a wheel takes over from a smooth scroll still running.
+    const takeOver = () => (auto = 0);
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    scroller.addEventListener("touchstart", takeOver, { passive: true });
+    scroller.addEventListener("wheel", takeOver, { passive: true });
     const ro = new ResizeObserver(toBottom);
     ro.observe(content);
     scroller.scrollTop = scroller.scrollHeight;
-    return () => ro.disconnect();
+    pin.current = () => (pinned = true);
+    return () => {
+      ro.disconnect();
+      scroller.removeEventListener("scroll", onScroll);
+      scroller.removeEventListener("touchstart", takeOver);
+      scroller.removeEventListener("wheel", takeOver);
+    };
   }, []);
+  // Sending a message always brings the conversation back to the bottom. A layout effect, so it runs
+  // before the resize observer reports the new message.
+  const count = messages.length;
+  const lastRole = messages.at(-1)?.role;
+  useLayoutEffect(() => {
+    if (lastRole === "user") pin.current();
+  }, [count, lastRole]);
 
   const lastPingu = [...messages].reverse().find((m) => m.role === "pingu");
   const speaker = lastPingu?.from && status !== "thinking" ? getAgent(lastPingu.from) : agent;
@@ -95,7 +129,8 @@ export default function ChatPane({
   };
 
   return (
-    <section className={`relative min-w-0 flex-1 flex-col bg-gb-main ${className}`}>
+    // pan-y: on phones a horizontal drag is the swipe back (see useSwipeBack), vertical ones scroll.
+    <section ref={ref} className={`relative min-w-0 flex-1 flex-col bg-gb-main max-md:[touch-action:pan-y_pinch-zoom] ${className}`}>
       {/* Header */}
       <header className="flex h-[calc(52px+env(safe-area-inset-top))] shrink-0 pt-[env(safe-area-inset-top)] items-center gap-1 border-b border-gb-divider px-4 md:h-[44px]">
         <button
@@ -440,9 +475,9 @@ function Composer({
           onTyping(!!e.target.value.trim());
           onKey();
         }}
-        placeholder={deaf ? t("chat.deaf", { name }) : t("chat.placeholder", { name })}
+        placeholder={deaf ? t("chat.deaf", { name }) : t("chat.placeholder")}
         className="min-w-0 flex-1 bg-transparent py-0.5 text-[16px] leading-5 md:text-[14px] text-gb-text placeholder:text-gb-text-3 focus:outline-none"
-        aria-label={t("chat.placeholder", { name })}
+        aria-label={t("chat.messageTo", { name })}
       />
       {text.trim() ? (
         <button

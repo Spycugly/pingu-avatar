@@ -118,7 +118,12 @@ export default function PinguStudio() {
   const speaking = useRef(0);
 
   useEffect(() => {
-    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    // On phones the browser's toolbars collapse and expand while the page scrolls, changing only the
+    // height: ignore that, or Pingu would grow and shrink under the finger. A new width (rotation) counts.
+    const onResize = () =>
+      setViewport((v) =>
+        window.innerWidth < 768 && window.innerWidth === v.w ? v : { w: window.innerWidth, h: window.innerHeight },
+      );
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
