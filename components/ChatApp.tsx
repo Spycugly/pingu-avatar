@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { addTransitionType, startTransition, useEffect, useRef, useState, ViewTransition } from "react";
 import { GithubLogo, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { AGENTS, getAgent } from "@/lib/agents";
@@ -16,11 +15,19 @@ import { play } from "@/lib/sound";
 import ChatPane from "./ChatPane";
 import Tooltip from "./Tooltip";
 
+/** The visitor's own avatar in the sidebar: a circle with a gradient between two nearby hues,
+    new on every visit. */
+function youGradient() {
+  const hue = Math.floor(Math.random() * 360);
+  return `linear-gradient(135deg, hsl(${hue} 45% 64%), hsl(${(hue + 70) % 360} 40% 52%))`;
+}
+
 /* Dimensions mirror the Grokbot demo on x.ai/bot: a 976×660 shell, 280px sidebar. */
 export default function ChatApp() {
   const { t, lang } = useI18n();
   const chat = useChat();
   const [theme] = useTheme();
+  const [you] = useState(youGradient);
   const [activeId, setActiveId] = useState("pingu");
   const [query, setQuery] = useState("");
   /** Phones show one screen at a time, starting from the list (where the tab bar is), like a messaging app. */
@@ -163,8 +170,8 @@ export default function ChatApp() {
             </nav>
 
             <div className="flex h-[50px] shrink-0 items-center gap-2 px-[14px] pb-[14px] pt-2">
-              <Image src="/gabriel.jpg" alt="" width={28} height={28} className="size-7 rounded-full object-cover" />
-              <span className="text-[13px] leading-[18px] text-gb-side-1">Gabriel</span>
+              <span className="size-7 shrink-0 rounded-full" style={{ background: you }} aria-hidden />
+              <span className="text-[13px] leading-[18px] text-gb-side-1">{t("chat.you")}</span>
             </div>
             {/* Phones: the page footer would sit under the tab bar, so its links close the list instead. */}
             <div className="flex flex-col items-center gap-1.5 px-5 pb-2 md:hidden">

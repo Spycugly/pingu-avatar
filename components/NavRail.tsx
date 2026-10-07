@@ -6,7 +6,6 @@ import { flushSync } from "react-dom";
 import { ChatCircle, FilmSlate, GearSix, Palette, type Icon } from "@phosphor-icons/react";
 import Tooltip from "./Tooltip";
 import { useI18n, type Key } from "@/lib/i18n";
-import { play } from "@/lib/sound";
 
 /* The floating rail shared by the studio (home page) and the chat, identical on both: the chat
    first, then the studio tabs. In the chat every studio item links
@@ -202,7 +201,6 @@ export default function NavRail({
               <div key={item} data-rail={item} className="group relative max-md:flex-1">
                 <Link
                   href={href}
-                  onClick={() => !isActive && play("slide")}
                   className={itemClass}
                   aria-label={label}
                   aria-current={isActive ? "page" : undefined}
@@ -216,10 +214,7 @@ export default function NavRail({
           return (
             <div key={item} data-rail={item} className="group relative max-md:flex-1">
               <button
-                onClick={() => {
-                  if (!isActive) play("slide");
-                  onTab(item);
-                }}
+                onClick={() => onTab(item)}
                 className={itemClass}
                 aria-label={label}
                 aria-pressed={isActive}

@@ -43,7 +43,7 @@ Routes are thin server shells:
 - `lib/agents.ts` defines the personas (colour, body `shape`, and per-language `copy`: name, tagline, greeting, fallback lines) plus the per-language composer `SUGGESTIONS` (each must trip a rule in its own language). An agent with `members` is a group chat: each reply comes from a random member, recorded in `Message.from`.
 - Avatar side effects go through the per-agent event bus `avatar/engine/bus.ts` (`emitPingu(agentId, …)` / `onPingu`), not props: the typewriter emits `syllable` events for lip-sync, the composer emits `keystroke`, and one-shot `action`s (spin, burst…) go the same way. `useChat.react()` sets short-lived "flourish" states (e.g. after an emoji reaction) that override the avatar state.
 
-- Sound: `lib/sound.ts` holds the one app-wide setting (`localStorage` key `pingu-sound`, off by default; the chat header button and the studio's Settings switch both drive it) and the shared `AudioContext`, unlocked on the first click or key press. Interface cues are tiny synthesized tones played with `play("tap" | "slide" | …)`, no audio files; the chat's honk is `lib/noot.ts`. New cues go in the `CUES` table.
+- Sound: `lib/sound.ts` holds the one app-wide setting (`localStorage` key `pingu-sound`, off by default; the chat header button and the studio's Settings switch both drive it) and the shared `AudioContext`, unlocked on the first click or key press. Interface cues are tiny synthesized tones played with `play("tap" | "open" | …)`, no audio files (the rail/tab bar plays none); the chat's honk is `lib/noot.ts`. New cues go in the `CUES` table.
 
 ## Avatar (`avatar/`)
 
