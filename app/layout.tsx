@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {/* Saved theme on <html> before the first paint, so the intro and the loading screens match it. */}
         <InlineScript
-          html={`(function(){try{if(localStorage.getItem("pingu-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}})()`}
+          html={`(function(){try{var t=localStorage.getItem("pingu-theme");if(t==="light"||(t==="system"&&!matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}})()`}
         />
       </head>
       <body className="min-h-full flex flex-col font-sans">{children}</body>

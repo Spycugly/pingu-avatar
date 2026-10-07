@@ -1,47 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, ViewTransition } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, ViewTransition } from "react";
 import { flushSync } from "react-dom";
-import { ChatCircle, FilmSlate, GearSix, Moon, Palette, Sun, type Icon } from "@phosphor-icons/react";
+import { ChatCircle, FilmSlate, GearSix, Palette, type Icon } from "@phosphor-icons/react";
 import Tooltip from "./Tooltip";
 import { useI18n, type Key } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 
 /* The floating rail shared by the studio (home page) and the chat, identical on both: the chat
-   first, then the studio tabs and the theme switch. In the chat every studio item links
+   first, then the studio tabs. In the chat every studio item links
    home with ?tab=; in the studio they switch tabs in place and "Chat" links to /chat. */
 
 export type RailItem = "chat" | "style" | "motion" | "settings";
 export type Theme = "light" | "dark";
+/** What the visitor picked: a fixed theme, or whatever the OS says. */
+export type ThemePref = Theme | "system";
 
 /** Read by the inline script in app/layout.tsx too. (The old "pingu-studio-theme" key saved the
     default on every first visit, so it can't tell a choice from a default: it is ignored.) */
 const THEME_KEY = "pingu-theme";
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+const subscribeScheme = (cb: () => void) => {
+  const mq = window.matchMedia(DARK_QUERY);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
+const systemTheme = (): Theme => (window.matchMedia(DARK_QUERY).matches ? "dark" : "light");
 
 /** Light/dark theme of the studio and the chat, shared by both pages. Dark by default; only a
-    theme picked with the switch is kept in localStorage.
-    Switching cross-fades the whole page through a view transition where the browser has one. */
+    choice made in the studio (light, dark or system) is kept in localStorage. Returns the theme
+    to draw, the saved choice and its setter.
+    Picking a theme cross-fades the whole page through a view transition where the browser has one. */
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [pref, setPref] = useState<ThemePref>(() => {
     try {
-      return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
+      const saved = localStorage.getItem(THEME_KEY);
+      return saved === "light" || saved === "system" ? saved : "dark";
     } catch {
       return "dark";
     }
   });
+  const system = useSyncExternalStore(subscribeScheme, systemTheme, () => "dark" as Theme);
+  const theme: Theme = pref === "system" ? system : pref;
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
-  const change = useCallback((next: Theme) => {
+  const change = useCallback((next: ThemePref) => {
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch {}
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced || !document.startViewTransition) return setTheme(next);
-    document.startViewTransition(() => flushSync(() => setTheme(next)));
+    if (reduced || !document.startViewTransition) return setPref(next);
+    document.startViewTransition(() => flushSync(() => setPref(next)));
   }, []);
-  return [theme, change] as const;
+  return [theme, pref, change] as const;
 }
 
 const ICONS: Record<RailItem, Icon> = {
@@ -68,30 +82,17 @@ let lastActive: RailItem | null = null;
 const itemClass =
   "grid size-11 place-items-center rounded-xl text-st-muted transition-colors duration-150 hover:bg-st-hover hover:text-st-ink";
 
-/** Sun and moon share one cell and swap with a turn and a fade. */
-const swap = (shown: boolean) =>
-  `[grid-area:1/1] transition-[opacity,rotate,scale] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
-    shown ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"
-  }`;
-
 export default function NavRail({
   active,
   onTab,
-  theme,
-  onTheme,
   className = "",
-  dividerClassName = "h-7 w-px md:h-px md:w-7",
   tooltipClassName = "left-1/2 top-[calc(100%+8px)] -translate-x-1/2 md:left-[calc(100%+12px)] md:top-1/2 md:translate-x-0 md:-translate-y-1/2",
 }: {
   active: RailItem;
   /** Studio only: switch tab in place instead of navigating. */
   onTab?: (item: Exclude<RailItem, "chat">) => void;
-  theme?: Theme;
-  onTheme?: (t: Theme) => void;
   className?: string;
-  /** Orientation of the line before the theme switch: match the breakpoint where the rail turns vertical. */
-  dividerClassName?: string;
-  /** Tooltip placement: below the horizontal rail, beside the vertical one (same breakpoint as above). */
+  /** Tooltip placement: below the horizontal rail, beside the vertical one (match the breakpoint where the rail turns vertical). */
   tooltipClassName?: string;
 }) {
   const { t } = useI18n();
@@ -192,29 +193,6 @@ export default function NavRail({
             </div>
           );
         })}
-
-        {theme && onTheme && (
-          <>
-            <span className={`self-center bg-st-line transition-colors duration-300 ${dividerClassName}`} aria-hidden />
-            <div className="group relative">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={theme === "dark"}
-                onClick={() => {
-                  play(theme === "dark" ? "on" : "off");
-                  onTheme(theme === "dark" ? "light" : "dark");
-                }}
-                className={itemClass}
-                aria-label={theme === "dark" ? t("nav.toLight") : t("nav.toDark")}
-              >
-                <Sun size={20} weight="fill" className={swap(theme === "dark")} />
-                <Moon size={20} weight="fill" className={swap(theme !== "dark")} />
-              </button>
-              {tip(t("nav.theme"))}
-            </div>
-          </>
-        )}
 
         <div
           ref={pillRef}

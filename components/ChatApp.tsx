@@ -19,7 +19,7 @@ import Tooltip from "./Tooltip";
 export default function ChatApp() {
   const { t, lang } = useI18n();
   const chat = useChat();
-  const [theme, setTheme] = useTheme();
+  const [theme] = useTheme();
   const [activeId, setActiveId] = useState("pingu");
   const [query, setQuery] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "chat">("chat");
@@ -52,15 +52,12 @@ export default function ChatApp() {
       data-theme={theme}
       className="chat relative flex min-h-dvh flex-col items-center justify-center gap-5 bg-gb-page py-5 text-gb-text md:gap-6 md:p-6"
     >
-      {/* The studio's rail, identical (theme switch included): the theme is shared with the studio
+      {/* The studio's rail, identical: the theme (picked in the studio) is shared with it
           and drives the chat's own light/dark tokens. On top on small screens, floating on the left on wide ones. */}
       <div className="studio min-[1180px]:absolute min-[1180px]:left-5 min-[1180px]:top-1/2 min-[1180px]:-translate-y-1/2" data-theme={theme}>
         <NavRail
           active="chat"
-          theme={theme}
-          onTheme={setTheme}
           className="min-[1180px]:flex-col"
-          dividerClassName="h-7 w-px min-[1180px]:h-px min-[1180px]:w-7"
           tooltipClassName="left-1/2 top-[calc(100%+8px)] -translate-x-1/2 min-[1180px]:left-[calc(100%+12px)] min-[1180px]:top-1/2 min-[1180px]:translate-x-0 min-[1180px]:-translate-y-1/2"
         />
       </div>

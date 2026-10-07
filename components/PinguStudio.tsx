@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CaretDown, Check, Copy, DownloadSimple, GithubLogo, X } from "@phosphor-icons/react";
+import { CaretDown, Check, Copy, Desktop, DownloadSimple, GithubLogo, Moon, Sun, X } from "@phosphor-icons/react";
 import { PINGU_AUTO, PinguAvatar, syllableFor, type EngineState, type PinguHandle, type ShapeName } from "@/avatar";
-import NavRail, { useTheme, type RailItem } from "./NavRail";
+import NavRail, { useTheme, type RailItem, type ThemePref } from "./NavRail";
 import Timeline, { type DropTarget, type TimelineHandle } from "./studio/Timeline";
 import { useTileDrag } from "./studio/useTileDrag";
 import MontageDialog, { type MontageBackground, type MontageFormat } from "./studio/MontageDialog";
@@ -51,6 +51,13 @@ const COLORS: { hex: string; label: Key }[] = [
   { hex: "#a3a3a3", label: "color.grey" },
 ];
 
+/** The app's theme, picked under the colours: the "auto" swatch above follows it. */
+const THEMES: { id: ThemePref; icon: typeof Sun }[] = [
+  { id: "light", icon: Sun },
+  { id: "dark", icon: Moon },
+  { id: "system", icon: Desktop },
+];
+
 type Tab = Exclude<RailItem, "chat">;
 /** Length of the "animated SVG / GIF" export of the current pose. */
 const CLIP_MS = 3000;
@@ -90,7 +97,7 @@ export default function PinguStudio() {
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
-  const [theme, setTheme] = useTheme();
+  const [theme, themePref, setThemePref] = useTheme();
 
   // Montage
   const [clips, setClips] = useState<Clip[]>(defaultCycle);
@@ -388,8 +395,6 @@ export default function PinguStudio() {
       <NavRail
         active={tab}
         onTab={selectTab}
-        theme={theme}
-        onTheme={setTheme}
         className="mx-auto mt-5 md:absolute md:left-5 md:top-1/2 md:mt-0 md:-translate-y-1/2 md:flex-col"
       />
 
@@ -583,6 +588,29 @@ export default function PinguStudio() {
                       aria-pressed={c.hex === color}
                       title={t(c.label)}
                     />
+                  ))}
+                </div>
+              </Section>
+              <Section title={t("studio.theme")}>
+                <div className="grid grid-cols-3 gap-2">
+                  {THEMES.map(({ id, icon: ThemeIcon }) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        if (id === themePref) return;
+                        play("tap");
+                        setThemePref(id);
+                      }}
+                      className={`flex h-12 items-center justify-center gap-2 rounded-xl border px-3 text-[15px] transition ${
+                        id === themePref
+                          ? "border-st-selected bg-st-surface text-st-ink"
+                          : "border-st-line bg-st-surface text-st-muted hover:border-st-line-strong hover:text-st-ink"
+                      }`}
+                      aria-pressed={id === themePref}
+                    >
+                      <ThemeIcon size={18} weight="fill" />
+                      {t(`studio.theme.${id}` as Key)}
+                    </button>
                   ))}
                 </div>
               </Section>
